@@ -1006,6 +1006,12 @@ async function runBootSequence() {
     // Wait for user to select language (selectLang will continue the flow)
     return;
   }
+  // Sync saved language to server (server restarts lose locale state)
+  fetch('/api/config/lang', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lang: savedLang }),
+  }).catch(() => {});
 
   // Flow: scan consent overlay is visible by default → user clicks allow/deny
   // → acceptScanConsent() hides it and shows memory auth overlay → scanMemory()
