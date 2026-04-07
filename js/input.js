@@ -526,6 +526,24 @@ function showLLMSetupOverlay(degradedReason) {
 // ─── Scan Consent + Memory Auth + Entry Point ───────────────
 let _selectedMemoryLevel = 'none';
 
+function toggleLang() {
+  const current = getLocale();
+  const next = current === 'zh' ? 'en' : 'zh';
+  setLocale(next);
+  fetch('/api/config/lang', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lang: next }),
+  }).catch(() => {});
+  _applyDomI18n();
+  _buildFallbackLines();
+  FALLBACK_LINES = [..._baseFallback];
+  const h = GameHistory.get();
+  if (h.totalGames >= 3) FALLBACK_LINES = [..._baseFallback, ..._veteranFallback];
+  const el = document.getElementById('lang-value');
+  if (el) el.textContent = next;
+}
+
 function selectLang(lang) {
   setLocale(lang);
   // Notify backend
@@ -1012,6 +1030,8 @@ async function runBootSequence() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ lang: savedLang }),
   }).catch(() => {});
+  const _langEl = document.getElementById('lang-value');
+  if (_langEl) _langEl.textContent = savedLang;
 
   // Flow: scan consent overlay is visible by default → user clicks allow/deny
   // → acceptScanConsent() hides it and shows memory auth overlay → scanMemory()
