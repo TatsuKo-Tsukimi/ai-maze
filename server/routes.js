@@ -20,6 +20,7 @@ const { getScanRoots } = require('./file-scanner');
 const mazeAgent = require('./maze-agent');
 const ammoQueue = require('./ammo-queue');
 const topicState = require('./topic-state');
+const themeCluster = require('./theme-cluster');
 const playerProfile = require('./player-profile');
 const { getIntegrationHealth } = require('./integration-health');
 const { createLLMClient, readAuthProfiles, readGatewayConfig } = require('./provider');

@@ -1355,7 +1355,7 @@ document.addEventListener('keydown', e => {
 
   // Minigame: Enter to submit (only shortcuts, no letter keys — they conflict with text input)
   if (isMinigameActive()) {
-    if (e.key === 'Enter') { e.preventDefault(); submitMinigame(); }
+    if (e.key === 'Enter' && !e.repeat) { e.preventDefault(); submitMinigame(); }
     return;
   }
   // Event overlay: 键盘不应穿透到底层移动
