@@ -136,48 +136,35 @@ const ROLE_TO_TYPE = {
   trial: 'drain', truth: 'calm', payoff: 'calm',
 };
 
-const _BASE_FALLBACK = [
-  t('villain.fallback.1'), t('villain.fallback.2'), t('villain.fallback.3'),
-  t('villain.fallback.4'), t('villain.fallback.5'),
-  t('villain.fallback.6'),
-  t('villain.fallback.7'), t('villain.fallback.8'),
-  t('villain.fallback.9'), t('villain.fallback.10'),
-  t('villain.fallback.11'), t('villain.fallback.12'),
-  t('villain.fallback.13'), t('villain.fallback.14'), t('villain.fallback.15'),
-  t('villain.fallback.16'), t('villain.fallback.17'),
-  t('villain.fallback.18'),
-];
-const _VETERAN_FALLBACK = [
-  t('villain.veteran.1'), t('villain.veteran.2'),
-  t('villain.veteran.3'), t('villain.veteran.4'),
-  t('villain.veteran.5'), t('villain.veteran.6'),
-  t('villain.veteran.7'), t('villain.veteran.8'),
-  t('villain.veteran.9'), t('villain.veteran.10'),
-  t('villain.veteran.11'),
-  t('villain.veteran.12'),
-];
-// Merge veteran lines in after 3+ sessions (lazy — GameHistory defined below)
-let FALLBACK_LINES = _BASE_FALLBACK;
-function _initFallbackLines() {
-  const h = GameHistory.get();
-  if (h.totalGames >= 3) FALLBACK_LINES = [..._BASE_FALLBACK, ..._VETERAN_FALLBACK];
+// Fallback lines — built lazily after locale is set (t() needs active locale)
+let _baseFallback = [];
+let _veteranFallback = [];
+let FALLBACK_LINES = [];
+let FALLBACK_TRIALS = [];
+let FALLBACK_TRIAL = {};
+
+function _buildFallbackLines() {
+  _baseFallback = Array.from({length: 18}, (_, i) => t(`villain.fallback.${i + 1}`));
+  _veteranFallback = Array.from({length: 12}, (_, i) => t(`villain.veteran.${i + 1}`));
+  FALLBACK_TRIALS = Array.from({length: 6}, (_, i) => ({
+    prompt: t(`trial.fallback.prompt.${i + 1}`),
+    evaluation_guide: t(`trial.fallback.eval.${i + 1}`),
+    hint: '',
+  }));
+  FALLBACK_TRIAL = FALLBACK_TRIALS[0] || {};
 }
 
-// 无服务时的备用 Trial 内容（旋转池，不重复）
-const FALLBACK_TRIALS = [
-  { prompt: t('trial.fallback.prompt.1'), evaluation_guide: t('trial.fallback.eval.1'), hint: '' },
-  { prompt: t('trial.fallback.prompt.2'), evaluation_guide: t('trial.fallback.eval.2'), hint: '' },
-  { prompt: t('trial.fallback.prompt.3'), evaluation_guide: t('trial.fallback.eval.3'), hint: '' },
-  { prompt: t('trial.fallback.prompt.4'), evaluation_guide: t('trial.fallback.eval.4'), hint: '' },
-  { prompt: t('trial.fallback.prompt.5'), evaluation_guide: t('trial.fallback.eval.5'), hint: '' },
-  { prompt: t('trial.fallback.prompt.6'), evaluation_guide: t('trial.fallback.eval.6'), hint: '' },
-];
+function _initFallbackLines() {
+  _buildFallbackLines();
+  FALLBACK_LINES = [..._baseFallback];
+  const h = GameHistory.get();
+  if (h.totalGames >= 3) FALLBACK_LINES = [..._baseFallback, ..._veteranFallback];
+}
+
 let _fallbackTrialIdx = 0;
 function getFallbackTrial() {
   return FALLBACK_TRIALS[_fallbackTrialIdx++ % FALLBACK_TRIALS.length];
 }
-// Legacy compat — some code uses FALLBACK_TRIAL as a constant
-const FALLBACK_TRIAL = FALLBACK_TRIALS[0];
 
 // ═══════════════════════════════════════════════════════════════
 // TAUNT POOLS

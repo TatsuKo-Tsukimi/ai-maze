@@ -45,7 +45,7 @@ const ctx = {
   GAME_DIR,
   sessionLog,
   ARCHIVIST_MODEL_ID: '',
-  LOCALE: process.env.LANG === 'zh' ? 'zh' : 'en',
+  LOCALE: (process.env.LANG || '').startsWith('zh') ? 'zh' : 'en',
   scanConsentReceived: false,
   startScanning: null, // set during boot; called after user consents to file scanning
 };
