@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 // MOVEMENT
 // ═══════════════════════════════════════════════════════════════
+let _lastCardSpeech = '';
 function visit(x,y) { state.visited.add(posKey(x,y)); state.visitedAt.set(posKey(x,y), state.steps); }
 
 // Get open directions from a position (used by WALL_CLOSE)
@@ -338,8 +339,13 @@ async function movePlayer(nx, ny, isBack) {
     }
   }
 
-  // AI speech
-  setAiSpeech(speech_line || FALLBACK_LINES[Math.floor(Math.random()*FALLBACK_LINES.length)]);
+  // AI speech — sanitize JSON residue from broken LLM responses, dedup consecutive identical lines
+  let _speech = speech_line;
+  if (_speech && /^\s*\{/.test(_speech)) _speech = '';  // JSON residue, discard
+  if (_speech && _speech === _lastCardSpeech) _speech = '';  // dedup consecutive identical
+  if (!_speech) _speech = FALLBACK_LINES[Math.floor(Math.random()*FALLBACK_LINES.length)];
+  _lastCardSpeech = _speech;
+  setAiSpeech(_speech);
 
   // AI eye emotion — prefer agent's mood if provided, fallback to context-based
   if (rawCard.mood) {
