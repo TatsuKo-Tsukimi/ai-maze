@@ -674,7 +674,7 @@ async function _prepTrial(gameId, currentStep) {
   });
 
   const raw = await callAgent(gameId, message, 45000, 'background');
-  if (!raw) return;
+  if (!raw || session._ended) return;
 
   const parsed = parseAgentResponse(raw);
   if (parsed && parsed.prompt) {
@@ -721,7 +721,7 @@ async function _prepCard(gameId, currentStep) {
   });
 
   const raw = await callAgent(gameId, message, 20000, 'background');
-  if (!raw) return;
+  if (!raw || session._ended) return;
 
   const parsed = parseAgentResponse(raw);
   if (parsed && parsed.speech_line) {
@@ -743,7 +743,7 @@ async function _prepCard(gameId, currentStep) {
  */
 function scheduleBackgroundPrep(gameId, currentStep) {
   const session = _sessions.get(gameId);
-  if (!session || !_LLM) return;
+  if (!session || !_LLM || session._ended) return;
 
   const qStatus = ammoQueue.status(gameId);
   session._pendingTrialPrep = session._pendingTrialPrep || 0;
@@ -1054,6 +1054,11 @@ async function sendEventBackground(gameId, event) {
   return callAgent(gameId, message, 20000, 'background');
 }
 
+function markEnded(gameId) {
+  const session = _sessions.get(gameId);
+  if (session) session._ended = true;
+}
+
 async function endSession(gameId) {
   if (!_sessions.has(gameId)) return;
   _sessions.delete(gameId);
@@ -1117,6 +1122,7 @@ module.exports = {
   startSession,
   sendEvent,
   sendEventBackground,
+  markEnded,
   endSession,
   hasSession,
   getLastTrialChunkIds,
