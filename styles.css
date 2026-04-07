@@ -1241,6 +1241,7 @@ body.exit-very-near .ai-whisper.visible {
   background: #04060f;
   transition: opacity 0.5s;
 }
+#lang-overlay.hidden { display: none; }
 #scan-consent-overlay.hidden { display: none; }
 #scan-consent-overlay.fade-out { opacity: 0; pointer-events: none; }
 #scan-consent-box {
