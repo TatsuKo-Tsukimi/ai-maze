@@ -526,7 +526,25 @@ function showLLMSetupOverlay(degradedReason) {
 // ─── Scan Consent + Memory Auth + Entry Point ───────────────
 let _selectedMemoryLevel = 'none';
 
+let _langConfirmTimer = null;
 function toggleLang() {
+  const el = document.getElementById('lang-value');
+  if (!el) return;
+
+  // First click: show confirmation
+  if (!_langConfirmTimer) {
+    const current = getLocale();
+    el.textContent = current === 'zh' ? '→en?' : '→zh?';
+    _langConfirmTimer = setTimeout(() => {
+      el.textContent = getLocale();
+      _langConfirmTimer = null;
+    }, 3000);
+    return;
+  }
+
+  // Second click within 3s: confirm switch
+  clearTimeout(_langConfirmTimer);
+  _langConfirmTimer = null;
   const current = getLocale();
   const next = current === 'zh' ? 'en' : 'zh';
   setLocale(next);
@@ -540,8 +558,7 @@ function toggleLang() {
   FALLBACK_LINES = [..._baseFallback];
   const h = GameHistory.get();
   if (h.totalGames >= 3) FALLBACK_LINES = [..._baseFallback, ..._veteranFallback];
-  const el = document.getElementById('lang-value');
-  if (el) el.textContent = next;
+  el.textContent = next;
 }
 
 function selectLang(lang) {
