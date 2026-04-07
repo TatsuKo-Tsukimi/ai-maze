@@ -16,6 +16,7 @@ const { getLureMaterials, getCachedEntry, scrubSensitiveLines } = require('./vis
 const factDb = require('./fact-db');
 const archivist = require('./archivist');
 const lureAllocator = require('./lure-allocator');
+const { getScanRoots } = require('./file-scanner');
 const mazeAgent = require('./maze-agent');
 const ammoQueue = require('./ammo-queue');
 const topicState = require('./topic-state');
@@ -1027,10 +1028,8 @@ function createRoutes(ctx) {
       const imgPath = params.get('path');
       if (!imgPath || !fs.existsSync(imgPath)) { res.writeHead(404); res.end('Not found'); return; }
       const resolved = path.resolve(imgPath);
-      // Allowlist: SOUL_PATH + GAME_ASSETS_PATH + personal scan dirs (not entire homedir)
-      const home = require('os').homedir();
-      const scanDirs = ['Desktop','Downloads','Documents','Pictures','Screenshots','Music','Videos','Projects','repos','src','dev','code']
-        .map(d => path.resolve(path.join(home, d)));
+      // Allowlist: SOUL_PATH + GAME_ASSETS_PATH + all scan roots (includes WSL /mnt paths)
+      const scanDirs = getScanRoots().map(r => path.resolve(r.path));
       const allowed = [ctx.SOUL_PATH, process.env.GAME_ASSETS_PATH, ...scanDirs].filter(Boolean);
       if (!allowed.some(a => resolved.startsWith(path.resolve(a)))) { res.writeHead(403); res.end('Forbidden'); return; }
       const SAFE_EXTS = new Set(['.png','.jpg','.jpeg','.gif','.webp','.bmp','.svg','.pdf','.txt','.md','.docx','.xlsx']);
