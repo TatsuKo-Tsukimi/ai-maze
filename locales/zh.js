@@ -16,7 +16,7 @@ registerLocale('zh', {
   'ui.status.label': '运行状态栏',
   'ui.status.aiReady': 'AI 就绪',
   'ui.status.aiThinking': 'AI 思考中…',
-  'ui.map.label': '已见区 / 雾区 / 残影',
+  'ui.map.label': '迷宫地图',
   'ui.map.youAreHere': '你在这里',
   'ui.map.movable': '可移动',
   'ui.map.ghostTrail': '记忆残影',
