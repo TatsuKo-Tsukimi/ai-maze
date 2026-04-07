@@ -1,0 +1,11 @@
+services:
+  maze:
+    build: .
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - SOUL_PATH=${SOUL_PATH:-}
+      - PORT=3000
+    restart: unless-stopped
