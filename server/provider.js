@@ -502,6 +502,8 @@ function createLLMClient(config) {
   // True Gateway base URL from local config (used to detect env-based Gateway proxy)
   const _realGateway = readGatewayConfig();
   const _realGatewayBase = _realGateway ? _realGateway.apiBase.replace(/\/$/, '') : null;
+  // Auto-disabled when a reasoning model is detected (outputs <think> blocks)
+  let _disablePrefill = false;
 
   /** Strip provider/ prefix for direct API calls (e.g. 'anthropic/claude-sonnet-4-20250514' → 'claude-sonnet-4-20250514') */
   function rawModel(canonical) {
@@ -608,7 +610,7 @@ function createLLMClient(config) {
 
     // Capability-aware prefill: only enabled for verified providers
     supportsPrefill() {
-      return ['anthropic', 'openclaw-gateway', 'openai'].includes(provider);
+      return !_disablePrefill && ['anthropic', 'openclaw-gateway', 'openai'].includes(provider);
     },
 
     async chat(systemPrompt, messages, options = {}) {
@@ -618,7 +620,7 @@ function createLLMClient(config) {
 
       // Append prefill assistant message if requested and provider supports it
       let finalMessages = messages;
-      if (options.prefill && ['anthropic', 'openclaw-gateway', 'openai'].includes(provider)) {
+      if (options.prefill && !_disablePrefill && ['anthropic', 'openclaw-gateway', 'openai'].includes(provider)) {
         finalMessages = [...messages, { role: 'assistant', content: options.prefill }];
       }
 
@@ -673,9 +675,15 @@ function createLLMClient(config) {
 
       // Strip reasoning model <think> blocks before callers try to parse JSON
       if (typeof raw === 'string') {
+        const hadThinking = /<think>/i.test(raw);
         raw = raw.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
         // Handle unclosed <think> (model started thinking but never closed)
         if (/<think>/i.test(raw)) raw = raw.replace(/<think>[\s\S]*/i, '').trim();
+        // Auto-disable prefill for reasoning models — prefill '{' + model's own '{' = '{{'
+        if (hadThinking && !_disablePrefill) {
+          _disablePrefill = true;
+          console.log('[provider] reasoning model detected — prefill auto-disabled');
+        }
       }
       return raw;
     },
