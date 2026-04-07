@@ -286,7 +286,7 @@ async function boot() {
 
   console.log('[scan] ⏳ 文件扫描已就绪，等待用户授权...');
 
-  const HOST = process.env.HOST || '0.0.0.0';
+  const HOST = process.env.HOST || '127.0.0.1';
   server.listen(PORT, HOST, () => {
     if (!process.env.NO_OPEN) {
       const open = process.platform === 'darwin' ? 'open'
