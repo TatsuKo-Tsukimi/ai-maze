@@ -15,7 +15,7 @@ registerLocale('en', {
   'ui.status.label': 'Status Bar',
   'ui.status.aiReady': 'AI Ready',
   'ui.status.aiThinking': 'AI Thinking…',
-  'ui.map.label': 'Explored / Fog / Ghost Trail',
+  'ui.map.label': 'Maze Map',
   'ui.map.youAreHere': 'You are here',
   'ui.map.movable': 'Reachable',
   'ui.map.ghostTrail': 'Ghost trail',
