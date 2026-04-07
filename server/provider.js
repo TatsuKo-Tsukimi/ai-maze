@@ -326,11 +326,28 @@ async function autoDetect() {
   if (!result.provider) {
     const gateway = readGatewayConfig();
     if (gateway) {
-      applyProvider('openclaw-gateway', gateway.token, gateway.source, {
-        apiBase: gateway.apiBase,
-        model: envModel || 'openclaw/default',
-        gatewayPort: gateway.port,
-      });
+      // Probe gateway to verify LLM proxy is actually available
+      // Use /v1/chat/completions (not /v1/models which lists agent targets regardless)
+      let gatewayAlive = false;
+      try {
+        const res = await fetch(`${gateway.apiBase}/v1/chat/completions`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${gateway.token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'openclaw/default', messages: [] }),
+          signal: AbortSignal.timeout(2000),
+        });
+        // 404 = endpoint not available; any other status (400, 422, etc.) = endpoint exists
+        gatewayAlive = res.status !== 404;
+      } catch {}
+      if (gatewayAlive) {
+        applyProvider('openclaw-gateway', gateway.token, gateway.source, {
+          apiBase: gateway.apiBase,
+          model: envModel || 'openclaw/default',
+          gatewayPort: gateway.port,
+        });
+      } else {
+        console.log('  ⚠ OpenClaw Gateway detected but not proxying LLM — skipping');
+      }
     }
   }
 
