@@ -45,9 +45,9 @@ function readFileContent(filePath) {
   // PDF (pdf-parse v2 API via helper script)
   if (ext === '.pdf') {
     try {
-      const { execSync } = require('child_process');
+      const { execFileSync } = require('child_process');
       const extractScript = path.join(__dirname, 'utils', 'pdf-extract.js');
-      return execSync(`node "${extractScript}" "${filePath}"`, {
+      return execFileSync('node', [extractScript, filePath], {
         maxBuffer: 512 * 1024,
         timeout: 60000,
         cwd: path.join(__dirname, '..'),
@@ -56,8 +56,8 @@ function readFileContent(filePath) {
       log.warn('archivist', `PDF extraction failed for ${path.basename(filePath)}: ${(pdfErr.message || '').slice(0, 100)}`);
       // Fallback to pdftotext CLI
       try {
-        const { execSync } = require('child_process');
-        return execSync(`pdftotext "${filePath}" - 2>/dev/null`, { maxBuffer: 512 * 1024, timeout: 10000 }).toString('utf8').trim().slice(0, 4000);
+        const { execFileSync } = require('child_process');
+        return execFileSync('pdftotext', [filePath, '-'], { maxBuffer: 512 * 1024, timeout: 10000, stdio: ['pipe', 'pipe', 'ignore'] }).toString('utf8').trim().slice(0, 4000);
       } catch { return null; }
     }
   }
@@ -65,8 +65,8 @@ function readFileContent(filePath) {
   // DOCX
   if (ext === '.docx') {
     try {
-      const { execSync } = require('child_process');
-      const raw = execSync(`unzip -p "${filePath}" word/document.xml 2>/dev/null`, { maxBuffer: 512 * 1024, timeout: 10000 }).toString('utf8');
+      const { execFileSync } = require('child_process');
+      const raw = execFileSync('unzip', ['-p', filePath, 'word/document.xml'], { maxBuffer: 512 * 1024, timeout: 10000, stdio: ['pipe', 'pipe', 'ignore'] }).toString('utf8');
       return raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 4000);
     } catch { return null; }
   }
@@ -74,8 +74,8 @@ function readFileContent(filePath) {
   // XLSX
   if (ext === '.xlsx') {
     try {
-      const { execSync } = require('child_process');
-      const raw = execSync(`unzip -p "${filePath}" xl/sharedStrings.xml 2>/dev/null`, { maxBuffer: 512 * 1024, timeout: 10000 }).toString('utf8');
+      const { execFileSync } = require('child_process');
+      const raw = execFileSync('unzip', ['-p', filePath, 'xl/sharedStrings.xml'], { maxBuffer: 512 * 1024, timeout: 10000, stdio: ['pipe', 'pipe', 'ignore'] }).toString('utf8');
       return raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 4000);
     } catch { return null; }
   }

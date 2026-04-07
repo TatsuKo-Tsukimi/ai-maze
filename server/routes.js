@@ -180,7 +180,10 @@ function createRoutes(ctx) {
   };
 
   async function _handleRequestAsync(req, res) {
-    res.setHeader('Access-Control-Allow-Origin',  '*');
+    const origin = req.headers.origin || '';
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
@@ -1024,10 +1027,15 @@ function createRoutes(ctx) {
       const imgPath = params.get('path');
       if (!imgPath || !fs.existsSync(imgPath)) { res.writeHead(404); res.end('Not found'); return; }
       const resolved = path.resolve(imgPath);
-      const allowed = [ctx.SOUL_PATH, process.env.GAME_ASSETS_PATH, require('os').homedir()].filter(Boolean);
-      const isCached = !!getCachedEntry(resolved);
-      if (!isCached && !allowed.some(a => resolved.startsWith(path.resolve(a)))) { res.writeHead(403); res.end('Forbidden'); return; }
+      // Allowlist: SOUL_PATH + GAME_ASSETS_PATH + personal scan dirs (not entire homedir)
+      const home = require('os').homedir();
+      const scanDirs = ['Desktop','Downloads','Documents','Pictures','Screenshots','Music','Videos','Projects','repos','src','dev','code']
+        .map(d => path.resolve(path.join(home, d)));
+      const allowed = [ctx.SOUL_PATH, process.env.GAME_ASSETS_PATH, ...scanDirs].filter(Boolean);
+      if (!allowed.some(a => resolved.startsWith(path.resolve(a)))) { res.writeHead(403); res.end('Forbidden'); return; }
+      const SAFE_EXTS = new Set(['.png','.jpg','.jpeg','.gif','.webp','.bmp','.svg','.pdf','.txt','.md','.docx','.xlsx']);
       const ext = path.extname(imgPath).toLowerCase();
+      if (!SAFE_EXTS.has(ext)) { res.writeHead(403); res.end('Forbidden'); return; }
       const mimeMap = { '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.gif':'image/gif', '.webp':'image/webp' };
       res.writeHead(200, { 'Content-Type': mimeMap[ext] || 'application/octet-stream' });
       fs.createReadStream(imgPath).pipe(res);

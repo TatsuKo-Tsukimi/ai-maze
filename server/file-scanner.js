@@ -305,8 +305,8 @@ function extractTextPreview(filePath, maxLines = 30, maxChars = 2000) {
   // .docx: extract text via unzip (it's a zip file with word/document.xml inside)
   if (ext === '.docx') {
     try {
-      const { execSync } = require('child_process');
-      const raw = execSync(`unzip -p "${filePath}" word/document.xml 2>/dev/null`, { maxBuffer: 512 * 1024, timeout: 5000 });
+      const { execFileSync } = require('child_process');
+      const raw = execFileSync('unzip', ['-p', filePath, 'word/document.xml'], { maxBuffer: 512 * 1024, timeout: 5000, stdio: ['pipe', 'pipe', 'ignore'] });
       const text = raw.toString('utf8').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
       if (text.length > 10) {
         return { preview: text.slice(0, maxChars), totalLines: 0, language: 'document' };
@@ -322,8 +322,8 @@ function extractTextPreview(filePath, maxLines = 30, maxChars = 2000) {
   // .xlsx: extract shared strings via unzip
   if (ext === '.xlsx') {
     try {
-      const { execSync } = require('child_process');
-      const raw = execSync(`unzip -p "${filePath}" xl/sharedStrings.xml 2>/dev/null`, { maxBuffer: 512 * 1024, timeout: 5000 });
+      const { execFileSync } = require('child_process');
+      const raw = execFileSync('unzip', ['-p', filePath, 'xl/sharedStrings.xml'], { maxBuffer: 512 * 1024, timeout: 5000, stdio: ['pipe', 'pipe', 'ignore'] });
       const text = raw.toString('utf8').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
       if (text.length > 10) {
         return { preview: text.slice(0, maxChars), totalLines: 0, language: 'spreadsheet' };
@@ -340,21 +340,19 @@ function extractTextPreview(filePath, maxLines = 30, maxChars = 2000) {
   if (ext === '.pdf') {
     // Method 1: pdftotext (fast, if system has poppler-utils)
     try {
-      const { execSync } = require('child_process');
-      const text = execSync(`pdftotext "${filePath}" - 2>/dev/null`, { maxBuffer: 512 * 1024, timeout: 10000 }).toString('utf8').trim();
+      const { execFileSync } = require('child_process');
+      const text = execFileSync('pdftotext', [filePath, '-'], { maxBuffer: 512 * 1024, timeout: 10000, stdio: ['pipe', 'pipe', 'ignore'] }).toString('utf8').trim();
       if (text.length > 10) {
         return { preview: text.slice(0, maxChars), totalLines: 0, language: 'document' };
       }
     } catch { /* pdftotext not available */ }
     // Method 2: pdf-parse (npm package, no system deps)
     try {
-      const pdfParse = require('pdf-parse');
-      const buf = fs.readFileSync(filePath);
       // Sync wrapper: pdf-parse is async but we need sync here.
-      // Use a small child_process trick to run it.
-      const { execSync: execS } = require('child_process');
+      // Use execFileSync (no shell) to run a small inline script.
+      const { execFileSync: execF } = require('child_process');
       const script = `const fs=require('fs');const p=require('pdf-parse');p(fs.readFileSync(${JSON.stringify(filePath)})).then(d=>process.stdout.write(d.text.slice(0,${maxChars}))).catch(()=>process.exit(1))`;
-      const text = execS(`node -e "${script.replace(/"/g, '\\"')}"`, { maxBuffer: 512 * 1024, timeout: 15000 }).toString('utf8').trim();
+      const text = execF('node', ['-e', script], { maxBuffer: 512 * 1024, timeout: 15000 }).toString('utf8').trim();
       if (text.length > 10) {
         return { preview: text.slice(0, maxChars), totalLines: 0, language: 'document' };
       }
