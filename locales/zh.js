@@ -171,7 +171,7 @@ registerLocale('zh', {
   'llmSetup.anthropic.sub': '→ 获取 Claude API Key',
   'llmSetup.openai': 'OpenAI Platform',
   'llmSetup.openai.sub': '→ 获取 OpenAI API Key',
-  'llmSetup.openclawHint': 'OpenClaw 用户也可通过命令行 openclaw auth 配置',
+  'llmSetup.openclawHint': '最优方案是使用你本地的 OpenClaw 帮你配置',
 
   // ═══════════════════════════════════════════════════════════════
   // GAME INIT & LOG

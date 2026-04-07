@@ -1074,12 +1074,12 @@ function showConnectOverlay() {
   document.getElementById('connect-save-btn').disabled = true;
   document.getElementById('connect-result').textContent = '';
   fetch('/api/config/provider').then(r => r.json()).then(cfg => {
-    _connectSelectedProvider = 'openclaw-gateway';
+    _connectSelectedProvider = cfg.provider || 'openclaw-gateway';
     document.getElementById('connect-model').value = cfg.model || '';
     const archField = document.getElementById('connect-archivist-model');
     if (archField) archField.value = cfg.archivistModel || '';
     document.getElementById('connect-status').textContent = cfg.source ? t('connect.status.current', { source: cfg.source, model: cfg.model || 'default' }) : t('connect.status.notConnected');
-    document.querySelectorAll('.connect-tab').forEach(t => t.classList.toggle('active', t.dataset.provider === 'openclaw-gateway'));
+    document.querySelectorAll('.connect-tab').forEach(t => t.classList.toggle('active', t.dataset.provider === _connectSelectedProvider));
     _updateConnectFields();
     document.getElementById('connect-gateway-status').textContent = cfg.hasKey ? t('connect.gateway.connected') : t('connect.gateway.notFound');
   }).catch(() => {

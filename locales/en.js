@@ -170,7 +170,7 @@ registerLocale('en', {
   'llmSetup.anthropic.sub': '→ Get Claude API Key',
   'llmSetup.openai': 'OpenAI Platform',
   'llmSetup.openai.sub': '→ Get OpenAI API Key',
-  'llmSetup.openclawHint': 'OpenClaw users can also configure via CLI: openclaw auth',
+  'llmSetup.openclawHint': 'Best option: let your local OpenClaw handle the configuration',
 
   // ═══════════════════════════════════════════════════════════════
   // GAME INIT & LOG
