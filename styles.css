@@ -3108,6 +3108,8 @@ body.cli-theme::before {
   20% { opacity: .55; }
   100% { opacity: 0; transform: translateX(115%); }
 }
+.status-chip-lang { cursor: pointer; user-select: none; }
+.status-chip-lang:hover { border-color: rgba(142,164,191,.35); }
 body.hp-warning .status-chip-hp { border-color: rgba(208,123,87,.34); box-shadow: inset 0 0 18px rgba(208,123,87,.08); }
 body.hp-critical #header { box-shadow: inset 0 -1px 0 rgba(208,123,87,.35); }
 body.hp-critical .status-chip-hp {
