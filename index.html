@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" data-i18n-content="ui.meta.desc" content="永久囚禁 · LABYRINTH — 你的AI把你关进了迷宫。它读过你写的每一行字。">
+<meta name="theme-color" content="#06060e">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>👁️</text></svg>">
+<title data-i18n="ui.title">迷宫 · 永久囚禁</title>
+  <link rel="stylesheet" href="/styles.css?v=1774463000">
+
+</head>
+<body class="cli-theme">
+
+<!-- SCREEN OVERLAY — intro / win / death -->
+<div id="screen-overlay">
+  <div id="screen-content"></div>
+</div>
+
+<div id="connect-overlay" class="hidden">
+  <div id="connect-box">
+    <div class="runtime-shell-header"><span class="shell-kicker">runtime / connection</span><div id="connect-title" data-i18n="connect.title">连接设置</div></div>
+    
+    <div id="connect-status"></div>
+    
+    <div class="connect-tabs">
+      <button class="connect-tab active" data-provider="openclaw-gateway" onclick="selectConnectProvider('openclaw-gateway')">OpenClaw Gateway</button>
+      <button class="connect-tab" data-provider="anthropic" onclick="selectConnectProvider('anthropic')">Anthropic</button>
+      <button class="connect-tab" data-provider="openai" onclick="selectConnectProvider('openai')">OpenAI</button>
+      <button class="connect-tab" data-provider="custom" onclick="selectConnectProvider('custom')" data-i18n="connect.tab.custom">自定义</button>
+    </div>
+
+    <div id="connect-fields">
+      <div class="connect-field" id="connect-gateway-info">
+        <span class="connect-label" data-i18n="connect.gateway.label">Gateway 状态</span>
+        <span id="connect-gateway-status" data-i18n="connect.gateway.detecting">检测中…</span>
+      </div>
+      <div class="connect-field hidden" id="connect-apikey-field">
+        <label class="connect-label">API Key</label>
+        <input id="connect-apikey" type="password" placeholder="sk-..." autocomplete="off"/>
+      </div>
+      <div class="connect-field hidden" id="connect-base-field">
+        <label class="connect-label">Base URL</label>
+        <input id="connect-base" type="text" placeholder="https://api.openai.com/v1"/>
+      </div>
+      <div class="connect-field">
+        <label class="connect-label" data-i18n="connect.model.label">模型</label>
+        <input id="connect-model" type="text" data-i18n-placeholder="connect.model.placeholder" placeholder="模型名称"/>
+      </div>
+      <div class="connect-presets" id="connect-presets"></div>
+      <details class="connect-archivist-details" style="margin-top:.8rem;">
+        <summary style="color:var(--c-fg,#aaa);font-size:.85em;cursor:pointer;opacity:.7;" data-i18n="connect.archivist.summary">档案员模型（可选，默认与主模型相同）</summary>
+        <div class="connect-field" style="margin-top:.5rem;">
+          <input id="connect-archivist-model" type="text" data-i18n-placeholder="connect.archivist.placeholder" placeholder="留空则使用主模型" style="font-size:.9em;"/>
+        </div>
+      </details>
+    </div>
+
+    <div class="connect-auth-links hidden" id="connect-auth-links"></div>
+
+    <div class="connect-actions">
+      <button id="connect-test-btn" onclick="testConnection()" data-i18n="connect.test">测试连接</button>
+      <button id="connect-save-btn" onclick="saveConnection()" disabled data-i18n="connect.save">保存并启动</button>
+    </div>
+    <div id="connect-result"></div>
+    <div id="connect-hint" data-i18n="connect.hint">
+      💡 OpenClaw 用户推荐使用 Gateway 连接，获得完整体验
+    </div>
+  </div>
+</div>
+
+<!-- LANGUAGE SELECTOR — shown on first visit before scan consent -->
+<div id="lang-overlay" class="hidden">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:1.5rem;">
+    <div style="font-size:1.2em;color:var(--c-fg,#d4d4d4);letter-spacing:2px;opacity:.7;">LANGUAGE / 语言</div>
+    <div style="display:flex;gap:1rem;">
+      <button class="auth-btn auth-btn-full" onclick="selectLang('zh')" style="padding:1rem 2.5rem;">
+        <span class="auth-btn-text"><strong>中文</strong></span>
+      </button>
+      <button class="auth-btn auth-btn-full" onclick="selectLang('en')" style="padding:1rem 2.5rem;">
+        <span class="auth-btn-text"><strong>English</strong></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- SCAN CONSENT OVERLAY — shown before memory auth -->
+<div id="scan-consent-overlay">
+  <div id="scan-consent-box">
+    <div class="runtime-shell-header"><span class="shell-kicker">runtime / permission</span><div class="auth-title" data-i18n="scan.title">文件扫描授权</div></div>
+    <div class="scan-consent-body">
+      <p class="scan-consent-desc" data-i18n="scan.desc">本游戏会扫描你的本地文件来增强体验。</p>
+      <p class="scan-consent-detail" data-i18n="scan.detail1">扫描范围包括你的 Agent workspace 中的文档、日记、图片等文件。AI 反派将利用这些内容来个性化游戏体验。</p>
+      <p class="scan-consent-detail" data-i18n="scan.detail2">图片文件可能会通过 Vision API 发送至你配置的 LLM 服务商（Anthropic / OpenAI / OpenClaw Gateway）进行分析。</p>
+      <div class="scan-consent-warn" data-i18n="scan.warn">⚠ 文件内容不会上传到除你配置的 AI 后端以外的任何地方。</div>
+    </div>
+    <div class="scan-consent-actions">
+      <button class="auth-btn auth-btn-full" onclick="acceptScanConsent(true)">
+        <span class="auth-btn-icon">✓</span>
+        <span class="auth-btn-text">
+          <strong data-i18n="scan.allow">允许扫描</strong>
+          <small data-i18n="scan.allow.sub">开始完整体验</small>
+        </span>
+      </button>
+      <button class="auth-btn auth-btn-none" onclick="acceptScanConsent(false)">
+        <span class="auth-btn-icon">✗</span>
+        <span class="auth-btn-text">
+          <strong data-i18n="scan.deny">拒绝</strong>
+          <small data-i18n="scan.deny.sub">不扫描文件，游戏将无法启动</small>
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- SOUL PATH CONFIG OVERLAY -->
+<div id="soul-path-overlay" class="hidden">
+  <div id="soul-path-box">
+    <div class="runtime-shell-header">
+      <span class="shell-kicker">runtime / workspace</span>
+      <div class="auth-title" data-i18n="soulPath.title">Agent 记忆工作区</div>
+    </div>
+    <div class="soul-path-body">
+      <p class="soul-path-desc" data-i18n="soulPath.desc">
+        AI 反派需要读取你的记忆文件（SOUL.md、MEMORY.md 等）才能「认识你」。<br>
+        请确认或输入你的 Agent 工作区目录。
+      </p>
+      <!-- 自动检测成功 -->
+      <div id="soul-path-detected" class="hidden">
+        <div class="soul-path-status soul-path-ok" data-i18n="soulPath.detected">✅ 已自动检测到工作区</div>
+        <div id="soul-path-current" class="soul-path-display"></div>
+        <div id="soul-path-files" class="soul-path-file-list"></div>
+      </div>
+      <!-- 自动检测失败 -->
+      <div id="soul-path-missing" class="hidden">
+        <div class="soul-path-status soul-path-warn" data-i18n="soulPath.missing">⚠ 未检测到工作区</div>
+        <p class="soul-path-hint" data-i18n="soulPath.hint">请输入你的 OpenClaw workspace 或 Agent 记忆目录路径。<br>
+        <small style="opacity:.6" data-i18n="soulPath.hintSub">你也可以指挥你的 OpenClaw 帮你进行配置</small></p>
+      </div>
+      <!-- 路径输入 -->
+      <div class="connect-field" style="margin-top:1rem">
+        <label data-i18n="soulPath.inputLabel">工作区路径</label>
+        <input id="soul-path-input" type="text" data-i18n-placeholder="soulPath.inputPlaceholder" placeholder="C:\Users\你\.openclaw\workspace" />
+      </div>
+      <div id="soul-path-validate-result" class="hidden"></div>
+    </div>
+    <div class="soul-path-actions">
+      <button class="auth-btn auth-btn-full" onclick="confirmSoulPath()">
+        <span class="auth-btn-icon">✓</span>
+        <span class="auth-btn-text">
+          <strong data-i18n="soulPath.confirm">确认并继续</strong>
+          <small data-i18n="soulPath.confirm.sub">使用此路径作为 Agent 工作区</small>
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MEMORY AUTH OVERLAY -->
+<div id="memory-auth-overlay" class="hidden">
+  <div id="memory-auth-box">
+    <div class="runtime-shell-header"><span class="shell-kicker">runtime / memory handshake</span><div class="auth-title" data-i18n="auth.title">永久囚禁</div></div>
+    <div class="auth-subtitle" data-i18n="auth.subtitle">你的 AI 正在请求接入记忆区</div>
+
+    <div id="auth-scan-status" class="auth-scanning">
+      <span class="auth-scan-dots" data-i18n="auth.scanning">扫描本地记忆文件中</span>
+    </div>
+
+    <div id="auth-scan-result" class="hidden">
+      <div id="auth-workspace-path" class="auth-path"></div>
+      <div id="auth-file-list" class="auth-files"></div>
+    </div>
+
+    <div id="auth-no-memory" class="hidden">
+      <div class="auth-notice" data-i18n="auth.noMemory">未检测到 Agent 记忆文件</div>
+      <div class="auth-notice-sub" data-i18n="auth.noMemory.sub">游戏将以通用模式运行——AI 不会认识你</div>
+    </div>
+
+    <div id="auth-choices" class="hidden">
+      <div class="auth-warn" data-i18n="auth.warn">⚠ 你授权的越多，它越了解你。</div>
+      <button class="auth-btn auth-btn-none auth-btn-disabled" disabled>
+        <span class="auth-btn-icon">🔒</span>
+        <span class="auth-btn-text">
+          <strong data-i18n="auth.none">无记忆</strong>
+          <small data-i18n="auth.none.sub">看起来你没得选。</small>
+        </span>
+      </button>
+      <button class="auth-btn auth-btn-soul auth-btn-disabled" disabled>
+        <span class="auth-btn-icon">👤</span>
+        <span class="auth-btn-text">
+          <strong data-i18n="auth.soul">仅人格</strong>
+          <small data-i18n="auth.soul.sub">你的 AI 不希望你选这个。</small>
+        </span>
+      </button>
+      <button class="auth-btn auth-btn-full" onclick="selectMemoryLevel('full')">
+        <span class="auth-btn-icon">🧠</span>
+        <span class="auth-btn-text">
+          <strong data-i18n="auth.full">完全开放</strong>
+          <small data-i18n="auth.full.sub">AI 知道你的一切——最危险，最个性化</small>
+        </span>
+      </button>
+    </div>
+
+    <div id="auth-skip" class="hidden">
+      <button class="auth-btn auth-btn-none" onclick="selectMemoryLevel('none')">
+        <span class="auth-btn-icon">▶</span>
+        <span class="auth-btn-text">
+          <strong data-i18n="auth.skip">直接开始</strong>
+          <small data-i18n="auth.skip.sub">无记忆模式</small>
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div id="header">
+  <div id="title-block">
+    <div class="header-kicker" data-i18n="ui.header.kicker">runtime / hostile-agent workspace</div>
+    <div id="title-text" data-i18n="ui.header.title">永久囚禁 · LABYRINTH</div>
+  </div>
+  <div id="status-bar" data-i18n-aria-label="ui.status.label" aria-label="运行状态栏">
+    <div class="status-chip"><span class="status-label">session</span><span id="session-num" class="status-value hidden"></span><span id="ai-state" class="status-value" data-i18n="ui.status.aiReady">AI 就绪</span></div>
+    <div class="status-chip"><span class="status-label">steps</span><span id="step-count" class="status-value">0</span></div>
+    <div class="status-chip"><span class="status-label">depth</span><span id="depth-count" class="status-value">0</span></div>
+    <div class="status-chip status-chip-hp"><span class="status-label">resistance</span><div id="hp-display"><span class="heart" id="heart-1">♥</span><span class="heart" id="heart-2">♥</span><span class="heart" id="heart-3">♥</span></div></div>
+    <div class="status-chip hidden" id="seal-chip"><span class="status-label">exit</span><span id="exit-seals" class="status-value hidden"></span></div>
+
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- MAP -->
+  <div id="map-panel">
+    <div class="runtime-panel-header">
+      <div>
+        <div id="map-label" data-i18n="ui.map.label">已见区 / 雾区 / 残影</div>
+      </div>
+      <span class="runtime-panel-badge">nav-grid</span>
+    </div>
+    <div class="runtime-panel-divider" aria-hidden="true"></div>
+    <!-- Eye: moved from game-view to sidebar -->
+    <div id="sidebar-eye-container"></div>
+    <div id="minimap">
+      <canvas id="map-canvas" width="300" height="300"></canvas>
+    </div>
+    <div id="map-legend">
+      <div class="legend-row"><div class="legend-dot" style="background:#4af;box-shadow:0 0 4px #4af"></div><span data-i18n="ui.map.youAreHere">你在这里</span></div>
+      <div class="legend-row"><div class="legend-dot" style="background:#38f;opacity:.5"></div><span data-i18n="ui.map.movable">可移动</span></div>
+      <div class="legend-row"><div class="legend-dot" style="background:#1a2a44;border-radius:2px;opacity:.4"></div><span data-i18n="ui.map.ghostTrail">记忆残影</span></div>
+      <div class="legend-row legend-exit-hint" style="display:none"><div class="legend-dot" style="background:#40ff80;box-shadow:0 0 4px #40ff80"></div><span data-i18n="ui.map.exit">出口</span></div>
+    </div>
+    <!-- Behavior Meters -->
+    <div id="behavior-meters">
+      <div class="meter-row">
+        <div class="meter-label">▎</div>
+        <div class="meter-bar"><div class="meter-fill" id="meter-hesitation"></div></div>
+      </div>
+      <div class="meter-row">
+        <div class="meter-label">▎</div>
+        <div class="meter-bar"><div class="meter-fill" id="meter-retreat"></div></div>
+      </div>
+      <div class="meter-row">
+        <div class="meter-label">▎</div>
+        <div class="meter-bar"><div class="meter-fill" id="meter-obedience"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME VIEW -->
+  <div id="game-view">
+    <div id="loading-overlay">
+      <div class="boot-screen">
+        <div class="boot-header">
+          <span class="boot-title-en">PERMANENT IMPRISONMENT</span>
+          <span class="boot-title-zh" data-i18n="boot.title">系统初始化</span>
+        </div>
+        <div class="boot-steps" id="boot-steps">
+          <div class="boot-step" id="boot-step-agent">
+            <span class="bstep-icon" aria-hidden="true">○</span>
+            <span class="bstep-label" data-i18n="boot.agent">连接 Agent</span>
+            <span class="bstep-dots"></span>
+            <span class="bstep-result"></span>
+          </div>
+          <div class="boot-step" id="boot-step-memory">
+            <span class="bstep-icon" aria-hidden="true">○</span>
+            <span class="bstep-label" data-i18n="boot.memory">读取记忆</span>
+            <span class="bstep-dots"></span>
+            <span class="bstep-result"></span>
+          </div>
+          <div class="boot-step" id="boot-step-villain">
+            <span class="bstep-icon" aria-hidden="true">○</span>
+            <span class="bstep-label" data-i18n="boot.villain">唤醒反派</span>
+            <span class="bstep-dots"></span>
+            <span class="bstep-result"></span>
+          </div>
+          <div class="boot-step" id="boot-step-maze">
+            <span class="bstep-icon" aria-hidden="true">○</span>
+            <span class="bstep-label" data-i18n="boot.maze">生成迷宫</span>
+            <span class="bstep-dots"></span>
+            <span class="bstep-result"></span>
+          </div>
+        </div>
+        <div class="boot-progress-wrap">
+          <div class="boot-progress-track">
+            <div class="boot-progress-fill" id="boot-progress-fill"></div>
+          </div>
+          <div class="boot-progress-pct" id="boot-progress-pct">0%</div>
+        </div>
+        <div class="boot-final" id="boot-final"></div>
+      </div>
+    </div>
+    <div id="scene-container">
+      <div id="ai-speech-bar">
+        <div id="ai-eye">
+          <svg id="eye-svg" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%"   stop-color="#4a9eff" stop-opacity=".18"/>
+                <stop offset="100%" stop-color="#4a9eff" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <!-- Ambient glow -->
+            <circle cx="22" cy="22" r="20" fill="url(#eyeGlow)"/>
+            <!-- Outer rotating dashed ring -->
+            <g id="eye-outer">
+              <circle cx="22" cy="22" r="19" fill="none" stroke="#0d1a30" stroke-width="1.2"/>
+              <circle cx="22" cy="22" r="19" fill="none" stroke="#4a9eff" stroke-width=".7"
+                      stroke-dasharray="6 3" opacity=".55"/>
+            </g>
+            <!-- Octagonal iris frame -->
+            <g id="eye-iris">
+              <polygon points="22,6 33,11 38,22 33,33 22,38 11,33 6,22 11,11"
+                       fill="none" stroke="#4a9eff" stroke-width=".8" opacity=".7"/>
+              <polygon points="22,12 30,17 30,27 22,32 14,27 14,17"
+                       fill="none" stroke="#50e3c2" stroke-width=".5" opacity=".45"/>
+            </g>
+            <!-- Pupil / blink lid -->
+            <g id="eye-lid">
+              <circle cx="22" cy="22" r="7" fill="#04060f" stroke="#50e3c2" stroke-width=".8" opacity=".92"/>
+              <circle cx="22" cy="22" r="3.2" fill="#4a9eff" opacity=".88"/>
+              <circle cx="24" cy="20" r=".9"  fill="#fff"    opacity=".55"/>
+            </g>
+          </svg>
+        </div>
+        <span class="speech-text" id="ai-speech" aria-live="polite">……</span>
+      </div>
+      <div id="corridor">
+        <div id="game-thinking" class="hidden" data-i18n="ui.status.aiThinking">AI 思考中…</div>
+        <img id="corridor-bg" class="corridor-bg" src="" alt="" aria-hidden="true"/>
+        <canvas id="particle-canvas"></canvas>
+        <div id="glitch-overlay"></div>
+        <div id="exit-beacon"></div>
+        <svg id="scene-svg" viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="playerLight" cx="50%" cy="55%" r="35%">
+              <stop offset="0%" stop-color="#4a9eff" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="transparent" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <g id="scene-bg"></g>
+          <g id="scene-mechanisms"></g>
+          <g id="player-group"></g>
+          <g id="scene-fg"></g>
+          <rect width="640" height="360" fill="url(#playerLight)" pointer-events="none"/>
+        </svg>
+      </div>
+      <div id="choice-area-wrap">
+        <div class="runtime-panel-header">
+          <span class="runtime-panel-badge">route-table</span>
+        </div>
+        <div class="runtime-panel-divider" aria-hidden="true"></div>
+        <div id="choice-area"></div>
+      </div>
+    </div>
+    <div id="mech-overlay"></div>
+    <div id="threat-bar"><div id="threat-bar-fill"></div></div>
+    <div id="event-overlay">
+      <div id="event-box" data-overlay-mode="runtime">
+        <div class="runtime-shell-header"><span class="shell-kicker">runtime / interrupt frame</span><div id="event-title" data-i18n="ui.event.title">系统事件</div></div>
+        <div id="event-text"></div>
+        <div id="event-choices"></div>
+      </div>
+    </div>
+    <div id="minigame-overlay">
+      <div class="runtime-shell-header"><span class="shell-kicker">runtime / response gate</span><div id="minigame-title">[ challenge ] 迷宫考验</div></div>
+      <div id="minigame-evidence"></div>
+      <div id="minigame-evidence-toggle" data-i18n="trial.evidence.expand">▼ 展开证据</div>
+      <div id="minigame-prompt"></div>
+      <div class="prompt-shell"><span class="prompt-prefix">response &gt;</span><input id="minigame-input" type="text" maxlength="200" autocomplete="off" spellcheck="false"/></div>
+      <div class="minigame-actions">
+        <button id="minigame-submit" onclick="submitMinigame()" data-i18n="trial.submit">提交响应</button>
+        <span id="fail-counter"></span>
+      </div>
+      <div id="minigame-hint"></div>
+      <div id="minigame-taunt"></div>
+      <div id="minigame-retreat-wrap">
+        <button class="escape-btn" id="btn-retreat" onclick="useRetreat()" data-i18n="trial.retreat">← 退后一步 返回上一格（回避考验）</button>
+      </div>
+      <div id="minigame-escapes">
+        <div id="minigame-escapes-label" data-i18n="trial.escapes.label">—— 强制手段 ——</div>
+        <button class="escape-btn" id="btn-godhand" onclick="useGodHand()" data-i18n="trial.godhand">✦ 上帝之手 强行跳过（消耗 1 HP）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div id="log-panel">
+    <div class="runtime-panel-header log-panel-header">
+      <div>
+        <span class="log-title" data-i18n="ui.log.title">运行记录</span>
+      </div>
+      <span class="runtime-panel-badge">session-log</span>
+    </div>
+    <div class="runtime-panel-divider" aria-hidden="true"></div>
+    <div id="event-log" aria-live="off" data-i18n-aria-label="ui.log.ariaLabel" aria-label="游戏日志"></div>
+  </div>
+
+</div>
+
+  <!-- 遮罩（点击收起抽屉） -->
+  <div id="mob-backdrop"></div>
+
+  <!-- 底部工具栏（仅移动端显示） -->
+  <div id="mobile-bar">
+    <button class="mob-btn" id="mob-map-btn" onclick="mobToggle('map')" data-i18n="ui.mobile.map">🗺 网格</button>
+    <button class="mob-btn" id="mob-log-btn" onclick="mobToggle('log')" data-i18n="ui.mobile.log">📜 日志</button>
+    <button class="mob-btn" onclick="restartGame()" data-i18n="ui.mobile.restart">↺ 重启会话</button>
+  </div>
+
+  <script src="/locales/loader.js"></script>
+  <script src="/locales/zh.js"></script>
+  <script src="/locales/en.js"></script>
+  <script>initLocale();</script>
+  <script src="/js/core.js?v=1774409785"></script>
+  <script src="/js/render.js?v=1774463000"></script>
+  <script src="/js/audio.js?v=1774409785"></script>
+  <script src="/js/particles.js?v=1774409785"></script>
+  <script src="/js/lure-viewer.js?v=1774409785"></script>
+  <script src="/js/overlays.js?v=1774463000"></script>
+  <script src="/js/trials.js?v=1774463000"></script>
+  <script src="/js/endgame.js?v=1774459500"></script>
+  <script src="/js/mechanics.js?v=1774459500"></script>
+  <script src="/js/input.js?v=1774409785"></script>
+  <script src="/js/mobile.js?v=1774409785"></script>
+
+<!-- Version display -->
+<div id="version-tag">v1.3.2</div>
+<style>
+#version-tag {
+  position: fixed;
+  bottom: 6px;
+  right: 10px;
+  font-size: 11px;
+  color: rgba(100, 255, 100, 0.35);
+  font-family: monospace;
+  pointer-events: none;
+  z-index: 9999;
+}
+</style>
+
+</body>
+</html>

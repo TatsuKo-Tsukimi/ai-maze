@@ -1,0 +1,24 @@
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db
+.claude/
+session-logs/
+test-logs/
+lure-cache.json
+*.bak
+lure-cache.json.bak*
+
+# Runtime state (generated locally on first run)
+data/fact-db.json
+data/fact-db-access.log
+data/player-profile.json
+data/player-profiles/
+data/villain-episodic.json
+data/villain-notes.jsonl
+data/lure-allocation-state.json
+data/themes.json
+data-seed/

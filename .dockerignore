@@ -1,0 +1,9 @@
+.git
+session-logs/
+data/
+test-logs/
+test-soul/
+node_modules/
+*.md
+!README.md
+!AGENT.md
