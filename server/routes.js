@@ -699,6 +699,7 @@ function createRoutes(ctx) {
 
       if (gameId) {
         _endedGames.add(gameId);
+        mazeAgent.markEnded(gameId);
         lureAllocator.endGame(gameId);
       }
       ammoQueue.cleanup(gameId);
