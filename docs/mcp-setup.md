@@ -18,7 +18,7 @@
 ### 1. 启动游戏服务器
 
 ```bash
-cd ai-maze-game
+cd ai-maze
 node server.js
 ```
 
@@ -38,7 +38,7 @@ node server.js
   "mcpServers": {
     "ai-maze-villain": {
       "command": "node",
-      "args": ["/你的路径/ai-maze-game/mcp-server.js"],
+      "args": ["/你的路径/ai-maze/mcp-server.js"],
       "env": {
         "AI_MAZE_PORT": "3000"
       }
@@ -70,7 +70,7 @@ Claude 会：
 如果你用的是 Claude Code，可以在项目目录下运行：
 
 ```bash
-claude mcp add ai-maze-villain node /你的路径/ai-maze-game/mcp-server.js
+claude mcp add ai-maze-villain node /你的路径/ai-maze/mcp-server.js
 ```
 
 然后在 Claude Code 对话中启动游戏。

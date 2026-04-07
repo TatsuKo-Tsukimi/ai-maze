@@ -18,7 +18,7 @@ A single-player horror game where the villain is a persistent AI that reads your
 
 ```bash
 git clone https://github.com/TatsuKo-Tsukimi/ai-maze.git
-cd ai-maze-game
+cd ai-maze
 npm install
 node server.js
 # Open http://localhost:3000
@@ -47,8 +47,8 @@ OPENAI_API_KEY=sk-xxx API_BASE=https://api.xxx.com/v1 node server.js
 ### 4) Docker
 
 ```bash
-docker build -t ai-maze-game .
-docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-ant-xxx ai-maze-game
+docker build -t ai-maze .
+docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-ant-xxx ai-maze
 ```
 
 See [.env.example](.env.example) for all configuration options.

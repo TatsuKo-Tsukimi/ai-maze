@@ -59,7 +59,7 @@ bash scripts/real-playtest.sh
 
 ```bash
 # 每个功能/修复完成后
-cd /path/to/ai-maze-game
+cd /path/to/ai-maze
 git add -A
 git commit -m "fix/feat/improve: 简短描述"
 git push origin main
