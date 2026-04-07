@@ -8,7 +8,7 @@ A single-player horror game where the villain is a persistent AI that reads your
 
 ### Before You Play
 
-- **Designed for [OpenClaw](https://github.com/anthropics/openclaw) users.** The game reads your local workspace files (SOUL.md, MEMORY.md, etc.) to personalize the experience. Without a local agent workspace, the villain has nothing to work with and the game loses most of its depth.
+- **Designed for [OpenClaw](https://github.com/openclaw/openclaw) users.** The game reads your local workspace files (SOUL.md, MEMORY.md, etc.) to personalize the experience. Without a local agent workspace, the villain has nothing to work with and the game loses most of its depth.
 - **This game consumes local tokens.** Every card, trial, judgment, and villain monologue is a live LLM call. A single playthrough can use thousands of tokens. The background archivist (file analysis + fact extraction) is especially token-heavy — consider pointing it at a cheaper model via `MAZE_MODEL` in `.env`. **Please monitor your token usage.**
 - **Experience varies by model.** Since the framework intentionally avoids over-constraining the agent, the quality of trials, villain personality, and strategic behavior depends heavily on the model you use. Stronger models produce better games. Balance cost vs. experience as you see fit.
 
@@ -28,7 +28,7 @@ node server.js
 
 ### 1) OpenClaw users (recommended — zero config)
 
-If you have [OpenClaw](https://github.com/anthropics/openclaw) installed and authenticated, the game auto-detects your credentials from `auth-profiles.json`. Just run `node server.js`.
+If you have [OpenClaw](https://github.com/openclaw/openclaw) installed and authenticated, the game auto-detects your credentials from `auth-profiles.json`. Just run `node server.js`.
 
 ### 2) Anthropic API key
 
