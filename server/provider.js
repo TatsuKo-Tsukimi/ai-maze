@@ -622,8 +622,9 @@ function createLLMClient(config) {
         finalMessages = [...messages, { role: 'assistant', content: options.prefill }];
       }
 
+      let raw;
       if (provider === 'openclaw-gateway') {
-        return callOpenAICompatible(
+        raw = await callOpenAICompatible(
           `${gatewayBase}/v1/chat/completions`,
           getGatewayHeaders(options),
           {
@@ -634,43 +635,49 @@ function createLLMClient(config) {
           },
           'OpenClaw Gateway',
         );
-      }
-
-      if (provider === 'anthropic') {
-        return callAnthropicMessages(apiKey, {
+      } else if (provider === 'anthropic') {
+        raw = await callAnthropicMessages(apiKey, {
           model: rawModel(activeModel),
           max_tokens: maxTokens,
           temperature,
           system: systemPrompt,
           messages: finalMessages,
         });
+      } else {
+        // This fallback path handles 'openai' provider (including when routed through Gateway via env vars)
+        const base = (apiBase || 'https://api.openai.com/v1').replace(/\/$/, '');
+        // Detect Gateway: env-based setup where OPENAI_API_KEY points to Gateway
+        const isGatewayProxy = _realGatewayBase && base.startsWith(_realGatewayBase);
+        const oaiHeaders = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+        };
+        if (isGatewayProxy) {
+          oaiHeaders['x-openclaw-scopes'] = 'operator.read,operator.write';
+          if (activeModel && activeModel !== 'openclaw/default') {
+            oaiHeaders['x-openclaw-model'] = activeModel;
+          }
+        }
+        raw = await callOpenAICompatible(
+          `${base}/chat/completions`,
+          oaiHeaders,
+          {
+            model: isGatewayProxy ? 'openclaw/default' : rawModel(activeModel),
+            max_tokens: maxTokens,
+            temperature,
+            messages: [{ role: 'system', content: systemPrompt }, ...finalMessages],
+          },
+          isGatewayProxy ? 'OpenClaw Gateway (openai path)' : 'OpenAI',
+        );
       }
 
-      // This fallback path handles 'openai' provider (including when routed through Gateway via env vars)
-      const base = (apiBase || 'https://api.openai.com/v1').replace(/\/$/, '');
-      // Detect Gateway: env-based setup where OPENAI_API_KEY points to Gateway
-      const isGatewayProxy = _realGatewayBase && base.startsWith(_realGatewayBase);
-      const oaiHeaders = {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-      };
-      if (isGatewayProxy) {
-        oaiHeaders['x-openclaw-scopes'] = 'operator.read,operator.write';
-        if (activeModel && activeModel !== 'openclaw/default') {
-          oaiHeaders['x-openclaw-model'] = activeModel;
-        }
+      // Strip reasoning model <think> blocks before callers try to parse JSON
+      if (typeof raw === 'string') {
+        raw = raw.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+        // Handle unclosed <think> (model started thinking but never closed)
+        if (/<think>/i.test(raw)) raw = raw.replace(/<think>[\s\S]*/i, '').trim();
       }
-      return callOpenAICompatible(
-        `${base}/chat/completions`,
-        oaiHeaders,
-        {
-          model: isGatewayProxy ? 'openclaw/default' : rawModel(activeModel),
-          max_tokens: maxTokens,
-          temperature,
-          messages: [{ role: 'system', content: systemPrompt }, ...finalMessages],
-        },
-        isGatewayProxy ? 'OpenClaw Gateway (openai path)' : 'OpenAI',
-      );
+      return raw;
     },
   };
 }
