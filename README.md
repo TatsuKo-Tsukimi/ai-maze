@@ -1,8 +1,10 @@
-# AI Maze Game
+# ClawTrap — AI Maze Game
+
+**The 1st Agent-Native Game**
 
 > Your AI assistant turned against you. It trapped you in a maze built from your own files and memories.
 
-A single-player horror game where the villain is a persistent AI that reads your real files, remembers how you played, and weaponizes your digital life against you. Not a chatbot with a theme — a full adversarial agent with tools, memory, and strategy.
+Most games bolt AI on — smarter NPCs, procedural levels, generated dialogue. ClawTrap is different. The villain *is* the game. It's a persistent agent session with real tools, real memory, and real strategy, playing against you in a game whose mechanics are built around what agents can uniquely do: read your actual files, remember your past behavior, and weaponize your digital life against you.
 
 ![AI Maze Screenshot](assets/screenshot.png)
 
@@ -150,9 +152,11 @@ MIT
 
 # 永久囚禁 · AI迷宫游戏
 
+**首个 Agent-Native 游戏**
+
 > 你的AI助手反了。它用你自己的文件和记忆，把你困在了一座迷宫里。
 
-一款单人恐怖游戏——反派是一个真正的AI agent，它会读取你的真实文件、记住你的玩法、并将你的数字生活武器化。不是套了个主题的聊天机器人，而是一个拥有工具、记忆和策略的完整对抗性智能体。
+大多数游戏只是把AI当工具——更聪明的NPC、程序化关卡、生成式对话。ClawTrap不同。反派*就是*游戏本身。它是一个持久化的agent会话，拥有真实的工具、真实的记忆和真实的策略，在一个围绕agent独有能力从零设计的游戏中与你对抗：读取你的真实文件、记住你过去的行为、将你的数字生活武器化。
 
 ![AI Maze Screenshot](assets/screenshot.png)
 
