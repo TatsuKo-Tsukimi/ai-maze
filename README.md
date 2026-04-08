@@ -21,8 +21,8 @@ A single-player horror game where the villain is a persistent AI that reads your
 **Requirements:** Node.js 18+
 
 ```bash
-git clone https://github.com/TatsuKo-Tsukimi/ai-maze.git
-cd ai-maze
+git clone https://github.com/TatsuKo-Tsukimi/ClawTrap.git
+cd ClawTrap
 npm install
 node server.js
 # Open http://localhost:3000
@@ -51,8 +51,8 @@ OPENAI_API_KEY=sk-xxx API_BASE=https://api.xxx.com/v1 node server.js
 ### 4) Docker
 
 ```bash
-docker build -t ai-maze .
-docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-ant-xxx ai-maze
+docker build -t clawtrap .
+docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-ant-xxx clawtrap
 ```
 
 See [.env.example](.env.example) for all configuration options.
@@ -171,8 +171,8 @@ MIT
 **环境要求：** Node.js 18+
 
 ```bash
-git clone https://github.com/TatsuKo-Tsukimi/ai-maze.git
-cd ai-maze
+git clone https://github.com/TatsuKo-Tsukimi/ClawTrap.git
+cd ClawTrap
 npm install
 node server.js
 # 打开 http://localhost:3000
@@ -201,8 +201,8 @@ OPENAI_API_KEY=sk-xxx API_BASE=https://api.xxx.com/v1 node server.js
 ### 4) Docker
 
 ```bash
-docker build -t ai-maze .
-docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-ant-xxx ai-maze
+docker build -t clawtrap .
+docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-ant-xxx clawtrap
 ```
 
 完整配置项见 [.env.example](.env.example)。
