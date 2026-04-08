@@ -77,7 +77,7 @@ function createRoutes(ctx) {
     _rawSessionLog(gameId, data);
   };
 
-  function buildProviderConfig(payload = {}) {
+  async function buildProviderConfig(payload = {}) {
     const requestedProvider = String(payload.provider || '').trim() || ctx.PROVIDER;
     const requestedModel = String(payload.model || '').trim() || ctx.ACTIVE_MODEL || 'openclaw/default';
     const requestedApiBase = String(payload.apiBase || '').trim();
@@ -90,6 +90,18 @@ function createRoutes(ctx) {
     if (requestedProvider === 'openclaw-gateway') {
       const gateway = readGatewayConfig();
       if (!gateway) throw new Error(_t('error.no_gateway'));
+      // Probe gateway to verify LLM proxy is available
+      let gatewayAlive = false;
+      try {
+        const probeRes = await fetch(`${gateway.apiBase}/v1/chat/completions`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${gateway.token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'openclaw/default', messages: [] }),
+          signal: AbortSignal.timeout(2000),
+        });
+        gatewayAlive = probeRes.status !== 404;
+      } catch {}
+      if (!gatewayAlive) throw new Error(_t('error.gateway_no_llm'));
       return {
         provider: 'openclaw-gateway',
         apiKey: gateway.token,
@@ -946,7 +958,7 @@ function createRoutes(ctx) {
       try { data = JSON.parse(await readBody(req)); } catch {}
 
       try {
-        const nextConfig = buildProviderConfig(data);
+        const nextConfig = await buildProviderConfig(data);
         const nextClient = createLLMClient(nextConfig);
 
         ctx.LLM = nextClient;
@@ -986,7 +998,7 @@ function createRoutes(ctx) {
 
       try {
         const hasOverride = !!(data && (data.provider || data.apiKey || data.model || data.apiBase));
-        const client = hasOverride ? createLLMClient(buildProviderConfig(data)) : ctx.LLM;
+        const client = hasOverride ? createLLMClient(await buildProviderConfig(data)) : ctx.LLM;
         const model = hasOverride
           ? (String(data.model || '').trim() || ctx.ACTIVE_MODEL || 'openclaw/default')
           : (ctx.ACTIVE_MODEL || 'openclaw/default');

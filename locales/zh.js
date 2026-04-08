@@ -264,6 +264,7 @@ registerLocale('zh', {
   // ═══════════════════════════════════════════════════════════════
   // TRIAL UI (trials.js)
   // ═══════════════════════════════════════════════════════════════
+  'trial.title.header': '[ challenge ] 迷宫考验',
   'trial.title.normal': '[ challenge ] 响应审查',
   'trial.title.variant': '[ challenge ] 变体校验',
   'trial.evidence.expand': '▼ 展开证据',

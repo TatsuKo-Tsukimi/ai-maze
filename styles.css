@@ -3110,6 +3110,17 @@ body.cli-theme::before {
 }
 .status-chip-lang { cursor: pointer; user-select: none; }
 .status-chip-lang:hover { border-color: rgba(142,164,191,.35); }
+#lang-confirm-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,.75);
+  display: flex; align-items: center; justify-content: center; animation: overlayFadeIn .2s ease; }
+.lang-confirm-box { background: #0c0c14; border: 1px solid rgba(142,164,191,.2); border-radius: 8px;
+  padding: 28px 36px; text-align: center; max-width: 360px; }
+.lang-confirm-title { font-size: 15px; color: var(--c-fg,#d4d4d4); letter-spacing: 2px; margin-bottom: 12px; }
+.lang-confirm-msg { font-size: 13px; color: var(--text-dim,#8ea4bf); line-height: 1.6; margin-bottom: 20px; }
+.lang-confirm-btns { display: flex; gap: 12px; justify-content: center; }
+.lang-confirm-btn { padding: 8px 24px; border-radius: 4px; border: 1px solid rgba(142,164,191,.25);
+  background: transparent; color: var(--c-fg,#d4d4d4); cursor: pointer; font-size: 13px; }
+.lang-confirm-btn:hover { border-color: rgba(142,164,191,.5); }
+.lang-confirm-yes { background: rgba(142,164,191,.1); }
 body.hp-warning .status-chip-hp { border-color: rgba(208,123,87,.34); box-shadow: inset 0 0 18px rgba(208,123,87,.08); }
 body.hp-critical #header { box-shadow: inset 0 -1px 0 rgba(208,123,87,.35); }
 body.hp-critical .status-chip-hp {
