@@ -526,35 +526,33 @@ function showLLMSetupOverlay(degradedReason) {
 // ─── Scan Consent + Memory Auth + Entry Point ───────────────
 let _selectedMemoryLevel = 'none';
 
-let _langConfirmTimer = null;
 function toggleLang() {
-  const el = document.getElementById('lang-value');
-  if (!el) return;
-
-  // First click: show confirmation
-  if (!_langConfirmTimer) {
-    const current = getLocale();
-    el.textContent = current === 'zh' ? '→en?' : '→zh?';
-    _langConfirmTimer = setTimeout(() => {
-      el.textContent = getLocale();
-      _langConfirmTimer = null;
-    }, 3000);
-    return;
-  }
-
-  // Second click within 3s: switch and restart
-  clearTimeout(_langConfirmTimer);
-  _langConfirmTimer = null;
   const current = getLocale();
   const next = current === 'zh' ? 'en' : 'zh';
-  setLocale(next);
-  fetch('/api/config/lang', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lang: next }),
-  }).catch(() => {});
-  // Reload page to apply language cleanly
-  location.reload();
+  // Show confirmation overlay
+  let overlay = document.getElementById('lang-confirm-overlay');
+  if (overlay) { overlay.remove(); }
+  overlay = document.createElement('div');
+  overlay.id = 'lang-confirm-overlay';
+  overlay.innerHTML = `<div class="lang-confirm-box">
+    <div class="lang-confirm-title">${current === 'zh' ? '切换语言 / Switch Language' : 'Switch Language / 切换语言'}</div>
+    <div class="lang-confirm-msg">${current === 'zh' ? '切换到 English？游戏将重新加载。' : 'Switch to 中文? The game will reload.'}</div>
+    <div class="lang-confirm-btns">
+      <button class="lang-confirm-btn lang-confirm-yes" id="lang-confirm-yes">${current === 'zh' ? '确认 / Confirm' : 'Confirm / 确认'}</button>
+      <button class="lang-confirm-btn lang-confirm-no" id="lang-confirm-no">${current === 'zh' ? '取消 / Cancel' : 'Cancel / 取消'}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('lang-confirm-yes').onclick = () => {
+    setLocale(next);
+    fetch('/api/config/lang', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lang: next }),
+    }).catch(() => {});
+    location.reload();
+  };
+  document.getElementById('lang-confirm-no').onclick = () => { overlay.remove(); };
 }
 
 function selectLang(lang) {

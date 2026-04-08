@@ -263,6 +263,7 @@ registerLocale('en', {
   // ═══════════════════════════════════════════════════════════════
   // TRIAL UI (trials.js)
   // ═══════════════════════════════════════════════════════════════
+  'trial.title.header': '[ challenge ] Maze Trial',
   'trial.title.normal': '[ challenge ] Response Review',
   'trial.title.variant': '[ challenge ] Variant Check',
   'trial.evidence.expand': '▼ Show evidence',

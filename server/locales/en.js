@@ -780,6 +780,7 @@ Answer record:
 
   'error.provider_empty': 'Provider cannot be empty',
   'error.no_gateway': 'OpenClaw Gateway configuration or token not found',
+  'error.gateway_no_llm': 'OpenClaw Gateway cannot proxy LLM requests (no upstream nodes configured). Please choose another connection method.',
   'error.anthropic_key_empty': 'Anthropic API key cannot be empty (not found in auth-profiles either)',
   'error.openai_key_empty': 'OpenAI API key cannot be empty (not found in auth-profiles either)',
   'error.custom_key_empty': 'API key cannot be empty',

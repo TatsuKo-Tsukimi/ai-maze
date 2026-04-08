@@ -76,4 +76,5 @@ function initLocale() {
     const browserLang = (navigator.language || '').slice(0, 2);
     _currentLocale = _locales[browserLang] ? browserLang : 'en';
   }
+  _applyDomI18n();
 }
