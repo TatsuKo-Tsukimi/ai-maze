@@ -21,6 +21,7 @@
     "openai",
     "ollama"
   ],
+  "author": "TatsuKo Tsukimi",
   "license": "MIT",
   "repository": {
     "type": "git",
