@@ -542,7 +542,7 @@ function toggleLang() {
     return;
   }
 
-  // Second click within 3s: confirm switch
+  // Second click within 3s: switch and restart
   clearTimeout(_langConfirmTimer);
   _langConfirmTimer = null;
   const current = getLocale();
@@ -553,12 +553,8 @@ function toggleLang() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ lang: next }),
   }).catch(() => {});
-  _applyDomI18n();
-  _buildFallbackLines();
-  FALLBACK_LINES = [..._baseFallback];
-  const h = GameHistory.get();
-  if (h.totalGames >= 3) FALLBACK_LINES = [..._baseFallback, ..._veteranFallback];
-  el.textContent = next;
+  // Reload page to apply language cleanly
+  location.reload();
 }
 
 function selectLang(lang) {

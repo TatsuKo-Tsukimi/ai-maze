@@ -313,6 +313,8 @@ registerLocale('zh', {
   'trial.taunt.fail4': '再错一次。',
   'trial.taunt.fail3': '三次了。',
   'trial.taunt.fail2': '不想回答？',
+  'trial.stubbornDeath': '你可真有意思。',
+  'trial.stubbornDeath.log': '你的执念杀死了你。',
 
   // ═══════════════════════════════════════════════════════════════
   // GOD HAND & RETREAT TAUNTS

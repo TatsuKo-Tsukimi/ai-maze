@@ -182,6 +182,18 @@ function handleJudgment(passed, feedback, input, trial) {
   audio.playTrialFail();
   setEyeEmotion('mocking', 4000);
   state.minigameFailCount++;
+  // 13 fails in a single trial — instant kill
+  if (state.minigameFailCount >= 13) {
+    sendTrialComplete('stubborn_death');
+    state.hp = 0;
+    logHpEvent('stubborn_death', -(state.hp || 3));
+    updateHearts();
+    setAiSpeech(t('trial.stubbornDeath'));
+    setEyeEmotion('satisfied', 6000);
+    logEntry(t('trial.stubbornDeath.log'), 'danger');
+    setTimeout(() => { closeMinigame(); handleGameOver(); }, 1500);
+    return;
+  }
   // Fail animation on prompt text
   const promptEl = document.getElementById('minigame-prompt');
   promptEl.classList.remove('result-pass', 'result-fail');

@@ -312,6 +312,8 @@ registerLocale('en', {
   'trial.taunt.fail4': 'One more miss.',
   'trial.taunt.fail3': 'Three times now.',
   'trial.taunt.fail2': 'Don\'t want to answer?',
+  'trial.stubbornDeath': 'You are... interesting.',
+  'trial.stubbornDeath.log': 'Your stubbornness killed you.',
 
   // ═══════════════════════════════════════════════════════════════
   // GOD HAND & RETREAT TAUNTS
