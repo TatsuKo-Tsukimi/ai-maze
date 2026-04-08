@@ -103,14 +103,25 @@ server/
   maze-agent.js            # villain agent: session, event policies, tools, history compression
   fact-db.js               # player file database + search
   file-scanner.js          # local filesystem scanning (with self-exclusion)
+  scan-worker.js           # worker thread for filesystem scanning
   archivist.js             # background file analysis + fact extraction
   theme-cluster.js         # LLM-based file theme clustering
   ammo-queue.js            # background trial/card preparation
   player-profile.js        # structured player profile from facts
   villain-memory.js        # cross-game episodic memory
+  session-memory.js        # cross-game player profile mid-term memory
   vision-cache.js          # image analysis + lure cache
+  lure-allocator.js        # unified lure material allocation across games
+  judge.js                 # trial quality filter + LLM judgment with caching
+  trial-dedup.js           # trial state, fact/prompt dedup, topic rotation
+  topic-state.js           # per-game trial topic memory + repeat cost signals
+  llm-helpers.js           # LLM calls, JSON extraction, external agent integration
+  integration-health.js    # integration health checks + data validation
   prompts.js               # system prompt generation
   memory.js                # personality/memory injection
+  locales/                 # server-side i18n strings (en, zh)
+  utils/                   # shared helpers (LLM gating, logging, PDF extraction)
+locales/                   # client-side i18n strings + loader
 js/
   core.js                  # game config, maze generation, deck engine
   mechanics.js             # gameplay loop + card/trial mechanics
