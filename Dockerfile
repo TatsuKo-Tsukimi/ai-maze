@@ -13,8 +13,8 @@ ENV PORT=3000
 ENV HOST=0.0.0.0
 
 # Pass your API key at runtime:
-#   docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-ant-xxx ai-maze
+#   docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-ant-xxx clawtrap
 # Or use without AI for fallback mode:
-#   docker run -p 3000:3000 ai-maze
+#   docker run -p 3000:3000 clawtrap
 
 CMD ["node", "server.js"]

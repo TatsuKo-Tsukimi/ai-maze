@@ -1,5 +1,5 @@
 {
-  "name": "ai-maze",
+  "name": "clawtrap",
   "version": "1.5.1",
   "description": "永久囚禁 · AI迷宫游戏 — 你的AI助手反了，用你的记忆困住你",
   "main": "server.js",
@@ -25,7 +25,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/TatsuKo-Tsukimi/ai-maze.git"
+    "url": "https://github.com/TatsuKo-Tsukimi/ClawTrap.git"
   },
   "dependencies": {
     "pdf-parse": "^2.4.5",
