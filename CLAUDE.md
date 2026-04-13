@@ -124,14 +124,40 @@ file-scanner 跳过的目录名：`node_modules`, `.git`, `session-logs`, `test-
 | `server/maze-agent.js` | 核心：session 管理、EVENT_POLICIES、buildEventMessage、_callAgentImpl、history 压缩 |
 | `server/provider.js` | LLM 客户端工厂：多 provider 检测、chat()、prefill 支持 |
 | `server/routes.js` | HTTP 路由：card/trial/judge/react/intro/epilogue 等所有 API |
-| `server/fact-db.js` | 玩家文件数据库：chunk 索引、search、hit tracking |
+| `server/activation.js` | **ACT-R 贝叶斯激活引擎**：纯数学，管理所有记忆的激活分、衰减、检索排序 |
+| `server/fact-db.js` | 玩家文件数据库：chunk 索引、激活排序检索、hit tracking |
 | `server/archivist.js` | 后台文件分析：LLM 提取摘要/主题，写入 fact-db |
 | `server/file-scanner.js` | 文件系统扫描：发现玩家文件，支持 excludePaths |
-| `server/player-profile.js` | 玩家画像：从 fact-db 提炼结构化 profile |
-| `server/villain-memory.js` | villain 跨局记忆：episodic memory + reflection |
+| `server/player-profile.js` | 玩家画像：从 fact-db 提炼结构化 profile，激活感知 soft_spot 选择 |
+| `server/villain-memory.js` | villain 跨局记忆：episodic memory + 激活排序注入 + 记忆巩固 |
+| `server/session-memory.js` | 跨局行为画像：behaviorTags 派生 + `getContextFeatures()` 结构化检索锚点 |
 | `server/ammo-queue.js` | 弹药队列：预加载 trial/card 素材 |
 | `server/theme-cluster.js` | 主题聚类：文件按主题分组 |
 | `js/input.js` | 前端启动序列：扫描授权 → soul path → memory auth → 游戏 |
+
+---
+
+## 贝叶斯激活记忆系统 (`server/activation.js`)
+
+基于 ACT-R 认知模型的记忆生命周期管理。公式：`A(i) = B(i) + S(i) + ε`
+
+- **B(i)** = `ln(Σ t_j^(-0.5))` — 基础激活（访问频率 + 时近度衰减）
+- **S(i)** = `Σ W_k * cooccurrence(k,i)` — 从玩家上下文（behaviorTags, softSpots, theme）扩散的关联激活
+- **ε** = logistic 噪声 — 防止检索固化
+
+**替代了原有的** COOLDOWN=20 / RETIRE_USES=3/5 硬编码机制。
+
+**关键设计原则：novelty-first, activation-as-tiebreaker**。`getAvailableChunks` 优先选从未使用的 chunk（保证玩家每次看到新素材），只在新素材池耗尽时才用激活排序从已用 chunk 中回填。激活的真正作用是：在同样是新素材时，选最对口的那个（比如玩家怕蜘蛛 → 选没见过的蜘蛛相关素材，而不是随机选）。
+
+**调参**: 所有参数在 `activation.js` 顶部，可通过 `data/activation-config.json` 覆盖。关键参数：
+- `DECAY_D=0.5` (衰减指数), `RETIRE_THRESHOLD=-2.0`, `NOISE_SIGMA=0.25`
+- `W_HIT=1.5` (命中加成), `W_SOFT_SPOT=1.2`, `W_THEME=1.0`, `W_PLAYER_TAG=0.8`
+
+**数据流**: `routes.js /villain/start` → `sessionMemory.getContextFeatures()` → `factDb.setContextFeatures()` → 所有后续 `getAvailableChunks/markUsed` 自动携带上下文
+
+**记忆巩固**: `villain-memory.consolidateMemories()` 在每局结束时将高激活 episode 晋升到 `consolidated[]` 持久层
+
+**迁移**: 旧 chunk 数据在 `loadDb()` 时自动从 `useCount/hitCount` 合成 `_activation`
 
 ---
 

@@ -339,15 +339,15 @@ function _overlapChinese(a, b, minLen = 3) {
 }
 
 /**
- * Select top N soft_spots using multi-dimensional scoring + dedup.
+ * Select top N soft_spots using activation-aware multi-dimensional scoring + dedup.
  */
 function _selectTopSpots(spots, maxCount) {
   if (!Array.isArray(spots) || spots.length === 0) return [];
   const total = spots.length;
   const confMap = { high: 3, medium: 2, low: 1 };
+  const act = require('./activation');
 
   // Build cluster sizes: count how many other entries share 4+ chars with each topic
-  // Use 4-char window to avoid false clusters on common words like "失败" "学术"
   const clusterSizes = spots.map((s, i) => {
     let count = 0;
     for (let j = 0; j < total; j++) {
@@ -356,36 +356,33 @@ function _selectTopSpots(spots, maxCount) {
     return count;
   });
 
-  // Load episodic hit data
-  let hitCounts = {};
+  // Load context features for activation scoring
+  let ctxFeatures = null;
   try {
-    const fs = require('fs');
-    const path = require('path');
-    const epPath = path.join(__dirname, '..', 'data', 'villain-episodic.json');
-    const ep = JSON.parse(fs.readFileSync(epPath, 'utf8'));
-    for (const game of (ep.games || [])) {
-      for (const e of (game.episodes || [])) {
-        if (e.hit && e.material) {
-          const mat = (e.material || '').toLowerCase();
-          for (let si = 0; si < total; si++) {
-            if (mat.includes(spots[si].topic.slice(0, 4).toLowerCase())) {
-              hitCounts[si] = (hitCounts[si] || 0) + 1;
-            }
-          }
-        }
-      }
-    }
+    const sm = require('./session-memory');
+    ctxFeatures = sm.getContextFeatures('default');
   } catch {}
 
-  // Score each entry
-  const scored = spots.map((s, i) => ({
-    ...s,
-    _index: i,
-    _score: (confMap[s.confidence] || 1)
-      + (hitCounts[i] || 0) * 2
-      + Math.min(clusterSizes[i], 5) // cap cluster bonus at 5
-      + (i >= total * 2 / 3 ? 1 : 0), // recency: last 1/3 gets +1
-  }));
+  // Score each entry: confidence + activation + cluster + recency
+  const nowMs = Date.now();
+  const scored = spots.map((s, i) => {
+    // Compute activation score if spot has _activation data
+    let actScore = 0;
+    if (s._activation) {
+      actScore = act.computeActivation(s, ctxFeatures, nowMs);
+    }
+    // Normalize activation to a [0, 4] bonus range via sigmoid
+    const actBonus = 4 / (1 + Math.exp(-actScore));
+
+    return {
+      ...s,
+      _index: i,
+      _score: (confMap[s.confidence] || 1)
+        + actBonus
+        + Math.min(clusterSizes[i], 5)
+        + (i >= total * 2 / 3 ? 1 : 0),
+    };
+  });
 
   scored.sort((a, b) => b._score - a._score);
 
@@ -397,6 +394,33 @@ function _selectTopSpots(spots, maxCount) {
     selected.push(s);
   }
   return selected;
+}
+
+/**
+ * Get retrieval anchors for fact-db search pre-filtering.
+ * Returns top soft_spot topics + behavior pattern as search terms.
+ */
+function getRetrievalAnchors() {
+  const doc = loadProfile();
+  if (!doc || !doc.base_profile) return [];
+
+  const p = doc.base_profile;
+  const anchors = [];
+
+  // Top 5 soft_spot topics
+  if (p.soft_spots && p.soft_spots.length > 0) {
+    const top = _selectTopSpots(p.soft_spots, 5);
+    for (const s of top) {
+      anchors.push(s.topic);
+    }
+  }
+
+  // Behavior pattern keywords
+  if (p.behavior_pattern) {
+    anchors.push(p.behavior_pattern);
+  }
+
+  return anchors;
 }
 
 function getProfileForInjection() {
@@ -470,5 +494,6 @@ module.exports = {
   incrementalUpdate,
   gameEndReflection,
   getProfileForInjection,
+  getRetrievalAnchors,
   hasProfile,
 };

@@ -644,6 +644,10 @@ function createRoutes(ctx) {
       const gameId = data.gameId || `game_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       const playerId = data.playerId || 'default';
       const crossGameCtx = sessionMemory.buildCrossGameContext(playerId);
+      // Extract structured context features for activation-based retrieval
+      const contextFeatures = sessionMemory.getContextFeatures(playerId);
+      factDb.setContextFeatures(contextFeatures);
+      require('./villain-memory').setContextFeatures(contextFeatures);
       // Clean up stale ended-game markers (keep set bounded)
       if (_endedGames.size > 10) _endedGames.clear();
       lureAllocator.startGame(gameId);
@@ -726,7 +730,11 @@ function createRoutes(ctx) {
       res.end(JSON.stringify({ ok: true }));
 
       // Tear down session only after reflection completes (or fails)
-      _reflectionDone.finally(() => { if (gameId) mazeAgent.endSession(gameId); });
+      _reflectionDone.finally(() => {
+        if (gameId) mazeAgent.endSession(gameId);
+        // Consolidate high-activation episodic memories after session teardown
+        try { require('./villain-memory').consolidateMemories(); } catch {}
+      });
 
       // Trigger async game-end profile reflection (non-blocking)
       try {

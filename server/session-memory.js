@@ -345,6 +345,94 @@ function compressToLongTerm(playerId, recentSummaries) {
   console.log(`[session-memory] compressed ${newGames} games into long-term summary for ${pid} (total: ${existing.totalGames})`);
 }
 
+// ─── Context Features (structured retrieval anchor) ──────────────────────────
+
+/**
+ * Extract structured context features from player's game history.
+ * Used as retrieval anchor for activation-based memory systems.
+ * Pure math — no LLM calls.
+ *
+ * @param {string} playerId
+ * @returns {object|null} contextFeatures or null if no history
+ */
+function getContextFeatures(playerId) {
+  const raw = readRecentSummaries(playerId, 5);
+  const summaries = raw.filter(s => !s.incomplete && (s.totalSteps || 0) >= THRESHOLDS.minValidSteps);
+  if (summaries.length === 0) return null;
+
+  // Aggregate behavior tags
+  const tagCounts = {};
+  for (const s of summaries) {
+    for (const tag of (s.behaviorTags || [])) {
+      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+    }
+  }
+  const behaviorTags = Object.entries(tagCounts)
+    .filter(([, c]) => c >= 1)
+    .sort((a, b) => b[1] - a[1])
+    .map(([t]) => t);
+
+  // Temptation stats
+  const totalFollowed = summaries.reduce((s, g) => s + (g.temptationStats?.followed || 0), 0);
+  const totalIgnored  = summaries.reduce((s, g) => s + (g.temptationStats?.ignored || 0), 0);
+  const temptTotal = totalFollowed + totalIgnored;
+
+  // Trial stats
+  const totalTrials = summaries.reduce((s, g) => s + (g.trialStats?.total || 0), 0);
+  const totalPassed = summaries.reduce((s, g) => s + (g.trialStats?.passed || 0), 0);
+  const totalFailed = summaries.reduce((s, g) => s + (g.trialStats?.failed || 0), 0);
+
+  // God hand usage
+  const totalGodHand = summaries.reduce((s, g) => s + (g.godHandCount || 0), 0);
+
+  // Cognitive state derivation
+  const frustration = totalTrials > 0
+    ? Math.min(1, (totalGodHand + totalFailed) / Math.max(1, totalTrials * 2))
+    : 0;
+  const engagement = totalTrials > 0
+    ? Math.min(1, totalPassed / totalTrials)
+    : 0.5;
+
+  // Knowledge boundary: topics from trials where player consistently fails
+  const topicFailCounts = {};
+  const topicTotalCounts = {};
+  for (const s of summaries) {
+    for (const topic of (s.trialStats?.topics || [])) {
+      topicTotalCounts[topic] = (topicTotalCounts[topic] || 0) + 1;
+    }
+    // We only have aggregate topics per game, not per-trial — use tags as proxy
+  }
+  const knowledgeBoundary = Object.entries(topicFailCounts)
+    .filter(([, c]) => c >= 2)
+    .map(([t]) => t);
+
+  // Soft spot topics (read from player-profile if available)
+  let softSpotTopics = [];
+  try {
+    const pp = require('./player-profile');
+    const profile = pp.loadProfile();
+    if (profile?.base_profile?.soft_spots) {
+      softSpotTopics = profile.base_profile.soft_spots
+        .slice(0, 5)
+        .map(s => s.topic);
+    }
+  } catch { /* player-profile not ready */ }
+
+  return {
+    behaviorTags,
+    temptationFollowRate: temptTotal > 0 ? totalFollowed / temptTotal : 0.5,
+    trialPassRate: totalTrials > 0 ? totalPassed / totalTrials : 0.5,
+    gameCount: summaries.length,
+    softSpotTopics,
+    hitBonus: true, // always enable hit bonus in retrieval
+    cognitiveState: {
+      frustration,
+      engagement,
+      knowledgeBoundary,
+    },
+  };
+}
+
 // ─── Exports ──────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -353,5 +441,6 @@ module.exports = {
   readRecentSummaries,
   buildCrossGameContext,
   deriveBehaviorTags,
+  getContextFeatures,
   DATA_DIR,
 };
