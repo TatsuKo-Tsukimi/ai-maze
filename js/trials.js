@@ -91,6 +91,8 @@ function closeMinigame() {
 let _submittingTrial = false; // debounce guard — prevents Enter key + click double-submit
 
 async function submitMinigame() {
+  // Counter-Question mode: redirect to CQ submission
+  if (state._counterQuestionMode) { submitCounterQuestion(); return; }
   const raw = document.getElementById('minigame-input').value.trim();
   const input = raw.slice(0, 200);
   if (!input) return;
@@ -235,6 +237,23 @@ function handleJudgment(passed, feedback, input, trial) {
     document.getElementById('minigame-taunt').textContent = t('trial.taunt.fail2');
     document.getElementById('minigame-taunt').classList.add('visible');
   }
+  // ── Counter-Question button (Feature 2): appears after 1+ fail if player has 2+ fragments ──
+  if (state.minigameFailCount >= 1 && state.fragments >= 1 && !document.getElementById('btn-counter-question')) {
+    const cqBtn = document.createElement('button');
+    cqBtn.className = 'escape-btn counter-question-btn';
+    cqBtn.id = 'btn-counter-question';
+    cqBtn.textContent = t('trial.counterQuestion.btn', { cost: 1 });
+    cqBtn.onclick = () => enterCounterQuestionMode();
+    const retreatWrap = document.getElementById('minigame-retreat-wrap');
+    retreatWrap.classList.add('visible');
+    retreatWrap.insertBefore(cqBtn, retreatWrap.firstChild);
+    checkFirstCounterQuestionHint();
+  }
+  // Remove CQ button if not enough fragments
+  if (state.fragments < 1) {
+    const existingCQ = document.getElementById('btn-counter-question');
+    if (existingCQ) existingCQ.remove();
+  }
 }
 
 function useGodHand() {
@@ -273,7 +292,7 @@ function useRetreat() {
   logEntry(t('trial.log.retreat'));
   // Avoidance penalty: every 3rd avoidance (retreat + lure-ignore) costs 1 HP
   state._avoidanceCount = (state._avoidanceCount || 0) + 1;
-  if (state._avoidanceCount % 3 === 0) {
+  if (state._avoidanceCount % 5 === 0) {
     state.hp = Math.max(0, state.hp - 1);
     updateHearts();
     logHpEvent('avoidance_penalty', -1);
@@ -319,4 +338,136 @@ function sendTrialComplete(exitMethod) {
       step: state.steps || 0,
     }),
   }).catch(() => {}); // fire-and-forget
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COUNTER-QUESTION (Feature 2)
+// Reuses #minigame-input in a different mode. Player types a
+// counter-question for the villain; server judges if it stumps them.
+// ═══════════════════════════════════════════════════════════════
+let _cqOriginalPlaceholder = '';
+let _cqOriginalSubmitText = '';
+
+function enterCounterQuestionMode() {
+  if (state.fragments < 1 || state._counterQuestionMode) return;
+  state._counterQuestionMode = true;
+
+  const input = document.getElementById('minigame-input');
+  const submitBtn = document.getElementById('minigame-submit');
+  _cqOriginalPlaceholder = input.placeholder;
+  _cqOriginalSubmitText = submitBtn.textContent;
+
+  input.value = '';
+  input.placeholder = t('trial.counterQuestion.placeholder');
+  input.classList.add('cq-mode');
+  submitBtn.textContent = t('trial.counterQuestion.submit');
+  submitBtn.classList.add('cq-mode');
+  input.focus();
+
+  // Show cancel button
+  const cqBtn = document.getElementById('btn-counter-question');
+  if (cqBtn) {
+    cqBtn.textContent = t('trial.counterQuestion.cancel');
+    cqBtn.onclick = () => exitCounterQuestionMode();
+  }
+  document.getElementById('minigame-hint').textContent = t('trial.counterQuestion.costNote', { cost: 2 });
+}
+
+function exitCounterQuestionMode() {
+  state._counterQuestionMode = false;
+  const input = document.getElementById('minigame-input');
+  const submitBtn = document.getElementById('minigame-submit');
+  input.value = '';
+  input.placeholder = _cqOriginalPlaceholder;
+  input.classList.remove('cq-mode');
+  submitBtn.textContent = _cqOriginalSubmitText;
+  submitBtn.classList.remove('cq-mode');
+
+  const cqBtn = document.getElementById('btn-counter-question');
+  if (cqBtn && state.fragments >= 1) {
+    cqBtn.textContent = t('trial.counterQuestion.btn', { cost: 1 });
+    cqBtn.onclick = () => enterCounterQuestionMode();
+  }
+}
+
+async function submitCounterQuestion() {
+  const raw = document.getElementById('minigame-input').value.trim();
+  const input = raw.slice(0, 200);
+  if (!input) return;
+
+  state.fragments -= 1;
+  updateFragmentHUD();
+  exitCounterQuestionMode();
+
+  const trial = state.lastTrialData || getFallbackTrial();
+  const submitBtn = document.getElementById('minigame-submit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = t('trial.counterQuestion.thinking');
+  setAiThinking(true);
+
+  if (serverMode && state.villainGameId) {
+    try {
+      const res = await fetch('/api/judge/counter-question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameId: state.villainGameId,
+          trial_prompt: trial.prompt,
+          counter_question: input,
+          hp: state.hp,
+          steps: state.steps,
+        }),
+      });
+      const result = await res.json();
+      setAiThinking(false);
+      submitBtn.disabled = false;
+      submitBtn.textContent = _cqOriginalSubmitText || t('trial.submit');
+      _handleCounterQuestionResult(result.player_wins, result.villain_answer, result.mood, input, trial);
+    } catch {
+      setAiThinking(false);
+      submitBtn.disabled = false;
+      submitBtn.textContent = _cqOriginalSubmitText || t('trial.submit');
+      _handleCounterQuestionResult(input.length > 10, t('trial.counterQuestion.villainWeak'), null, input, trial);
+    }
+  } else {
+    // Offline: substantive input > 10 chars has 50% win
+    setAiThinking(false);
+    submitBtn.disabled = false;
+    submitBtn.textContent = _cqOriginalSubmitText || t('trial.submit');
+    _handleCounterQuestionResult(input.length > 10 && Math.random() < 0.5, null, null, input, trial);
+  }
+}
+
+function _handleCounterQuestionResult(playerWins, villainAnswer, mood, question, trial) {
+  if (mood) setEyeEmotion(mood, 5000);
+  state.counterQuestionCount = (state.counterQuestionCount || 0) + 1;
+  logDecision('counter-question', { success: playerWins, question });
+  logGameEvent('counter_question_result', { success: playerWins, question: question.slice(0, 200) });
+
+  if (playerWins) {
+    audio.playTrialPass();
+    sendTrialComplete('counter_question_pass');
+    const speech = villainAnswer || t('trial.counterQuestion.villainWeak');
+    setAiSpeech(speech);
+    setEyeEmotion('angry', 5000);
+    logEntry(t('trial.counterQuestion.pass.log'), 'important');
+
+    const promptEl = document.getElementById('minigame-prompt');
+    promptEl.textContent = `[ counter-pass ] ${speech}`;
+    promptEl.classList.remove('result-pass', 'result-fail');
+    void promptEl.offsetWidth;
+    promptEl.classList.add('result-pass');
+    setTimeout(() => { closeMinigame(); fillQueue(); buildChoices(); }, 800);
+  } else {
+    const speech = villainAnswer || t('trial.counterQuestion.villainStrong');
+    setAiSpeech(speech);
+    setEyeEmotion('mocking', 5000);
+    logEntry(t('trial.counterQuestion.fail.log'), 'danger');
+
+    // Remove CQ button if not enough fragments left
+    if (state.fragments < 1) {
+      const cqBtn = document.getElementById('btn-counter-question');
+      if (cqBtn) cqBtn.remove();
+    }
+  }
 }

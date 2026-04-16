@@ -256,7 +256,8 @@ function restartGame() {
   Object.assign(state, {
     maze:[], visited:new Set(), visitedAt:new Map(), history:[],
     playerPos:{x:1,y:1}, steps:0, depth:0,
-    hp:3, godHandCount:0, minigameFailCount:0, minigameReturnPos:null, _avoidanceCount:0,
+    hp:3, godHandCount:0, fragments:0, wallPushCount:0, suddenEventCount:0, counterQuestionCount:0, _counterQuestionMode:false,
+    minigameFailCount:0, minigameReturnPos:null, _avoidanceCount:0,
     currentMechanism:null, mode:'idle', recentCards:[], facing:null,
     effects:{ echoLoopSteps:0, memoryScrambleSteps:0, panicMoveToken:0, wallCloseDir:null, wallCloseSteps:0, shadowChaseSteps:0, countdownSteps:0, countdownStartDepth:0, _countdownPulse:null, _countdownIndicator:null },
     deck: {
@@ -300,6 +301,7 @@ function restartGame() {
   audio.reset();
   if (_twTimer) { clearInterval(_twTimer); _twTimer = null; }
   for (let i=1;i<=3;i++) { const h=document.getElementById(`heart-${i}`); h.classList.remove('lost','breaking'); }
+  const fragEl = document.getElementById('fragment-count'); if (fragEl) fragEl.textContent = '0';
   if (_mapPulseRaf) { cancelAnimationFrame(_mapPulseRaf); _mapPulseRaf=null; }
   document.getElementById('mech-overlay').innerHTML='';
   document.getElementById('event-log').innerHTML='';

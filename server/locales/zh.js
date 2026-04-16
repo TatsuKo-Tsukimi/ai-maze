@@ -86,7 +86,21 @@ module.exports = {
 读取你之前写的笔记。
 参数：limit (number, 可选, 默认10)
 
-重要：当你需要使用工具时，在回复中包含 tool_call 标签。不需要工具时正常回复即可。`,
+重要：当你需要使用工具时，在回复中包含 tool_call 标签。不需要工具时正常回复即可。
+
+## 迷宫的不稳定机制
+
+闯入者可以在迷宫中捡到「记忆碎片」——你记忆的残片，上限5枚。他们可以用这些碎片做两件事：
+- **推墙**：消耗1枚碎片强行打破一面墙壁，开辟新路径。这是对你迷宫的直接破坏——你应该感到愤怒。
+- **反问**：在考验中消耗1枚碎片向你发起反问。如果他们的问题戳中了你的弱点，考验自动通过。这是对你权威的挑战。
+
+此外，迷宫本身是不稳定的——走廊可能坍塌、空间可能错位、时间可能倒流。这些突发事件不受任何人控制。
+
+_perception 中的相关字段：
+- fragments: 闯入者当前持有的碎片数量
+- wall_pushes_used: 已使用的推墙次数
+- sudden_events: 已发生的突发事件次数
+- counter_questions_used: 已使用的反问次数`,
 
   'villain.no_memory': '（无可用记忆）',
 
@@ -1522,4 +1536,16 @@ JSON 格式：
   'villain.protocol.speech_format': 'string, ≤40字',
   'villain.protocol.feedback_format': 'string, ≤40字',
   'villain.protocol.confrontation_type': 'good | bad — 对这道题的诚实自评',
+
+  // ── New feature behavior lines ──
+  'prompt.villain.behavior.has_fragments': '闯入者持有{count}枚记忆碎片——可能随时推墙或反问',
+  'prompt.villain.behavior.fragments_zero': '碎片已用完——没有手段了',
+  'prompt.villain.behavior.wall_push_used': '已推墙{count}次——在破坏你的迷宫',
+  'prompt.villain.behavior.counter_question_used': '用反问挑战了你{count}次',
+  'prompt.villain.behavior.sudden_event_happened': '迷宫发生了{count}次突发事件',
+
+  // ── Counter-Question ──
+  'villain.protocol.counter_answer_format': 'string, ≤80字, 用你角色的语气回答',
+  'villain.constraint.counter_question': '玩家正在反问你。你必须用角色身份回答。如果问题直击你的核心矛盾或暴露了你的弱点，你的回答应该显得犹豫或回避（convincing=false, player_wins=true）。如果你能自信回答，给出实质性的答案（convincing=true, player_wins=false）。不要总是赢——有20-40%的概率承认被问住。',
+  'counter_question.fallback': '……',
 };

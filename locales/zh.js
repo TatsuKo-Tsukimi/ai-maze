@@ -260,6 +260,20 @@ registerLocale('zh', {
   'trial.fallback.prompt.4': '如果我现在放你走，你还会回来吗？',
   'trial.fallback.prompt.5': '你还记得自己为什么出发吗？',
   'trial.fallback.prompt.6': '告诉我一件你后悔的事。什么都行。',
+  'trial.fallback.prompt.7': '你最近一次对自己撒谎是什么时候？',
+  'trial.fallback.prompt.8': '如果明天醒来你的记忆全部消失，你最想保留哪一段？',
+  'trial.fallback.prompt.9': '你有没有一件事，想做但永远不会去做？',
+  'trial.fallback.prompt.10': '你对我说的这些话里，有多少是你真心的？',
+  'trial.fallback.prompt.11': '你觉得孤独和自由，哪个更接近你现在的状态？',
+  'trial.fallback.prompt.12': '如果可以给三年前的自己发一条消息，你会说什么？',
+  'trial.fallback.prompt.13': '你在逃避什么？不是这个迷宫——是生活里的。',
+  'trial.fallback.prompt.14': '描述一个让你觉得自己很渺小的瞬间。',
+  'trial.fallback.prompt.15': '你觉得别人眼中的你和真实的你，差距有多大？',
+  'trial.fallback.prompt.16': '你有没有一段关系，结束了但你从来没真正放下？',
+  'trial.fallback.prompt.17': '你最不愿意被别人知道的习惯是什么？',
+  'trial.fallback.prompt.18': '如果这个迷宫就是你内心的映射，它在告诉你什么？',
+  'trial.fallback.prompt.19': '你上一次真正开心——不是表演式的开心——是什么时候？',
+  'trial.fallback.prompt.20': '你愿意用什么来交换确定性？',
 
   // ═══════════════════════════════════════════════════════════════
   // TRIAL UI (trials.js)
@@ -900,4 +914,85 @@ registerLocale('zh', {
   'trial.fallback.eval.4': '开放题——认真回答即 pass，敷衍即 fail',
   'trial.fallback.eval.5': '开放题——回答有自省即 pass，敷衍即 fail',
   'trial.fallback.eval.6': '开放题——回答有真诚的自我披露即 pass，敷衍即 fail',
+  'trial.fallback.eval.7': '开放题——回答坦诚即 pass，回避/模糊即 fail',
+  'trial.fallback.eval.8': '开放题——回答有情感深度即 pass，敷衍即 fail',
+  'trial.fallback.eval.9': '开放题——回答有具体性即 pass，空泛即 fail',
+  'trial.fallback.eval.10': '开放题——回答有自我觉察即 pass，敷衍即 fail',
+  'trial.fallback.eval.11': '开放题——回答有真实感受即 pass，套话即 fail',
+  'trial.fallback.eval.12': '开放题——回答有具体内容即 pass，空洞即 fail',
+  'trial.fallback.eval.13': '开放题——回答有自我反思即 pass，逃避即 fail',
+  'trial.fallback.eval.14': '开放题——回答有真实体验即 pass，编造即 fail',
+  'trial.fallback.eval.15': '开放题——回答坦率即 pass，伪装即 fail',
+  'trial.fallback.eval.16': '开放题——回答有情感真实性即 pass，回避即 fail',
+  'trial.fallback.eval.17': '开放题——回答有脆弱性即 pass，防御即 fail',
+  'trial.fallback.eval.18': '开放题——回答有洞察力即 pass，敷衍即 fail',
+  'trial.fallback.eval.19': '开放题——回答有具体时刻即 pass，泛泛而谈即 fail',
+  'trial.fallback.eval.20': '开放题——回答有权衡思考即 pass，简单回避即 fail',
+
+  // ═══════════════════════════════════════════════════════════════
+  // FRAGMENTS 记忆碎片
+  // ═══════════════════════════════════════════════════════════════
+  'ui.status.fragments': '碎片',
+  'fragment.found.title': '记忆碎片',
+  'fragment.found.text': '墙壁裂缝中闪过一道微光。你伸手触碰，一枚冰冷的碎片落入掌心。',
+  'fragment.found.ok': '收下',
+  'fragment.found.log': '[ 碎片 ] 获得记忆碎片 ({count}/{max})',
+  'fragment.lure.speech': '……你竟然从诱惑中带走了什么。',
+  'fragment.lure.log': '[ 碎片 ] 从诱惑中获得碎片 ({count}/{max})',
+  'fragment.lure.text': '诱惑消散后，一枚碎片从残像中凝结。',
+
+  // ═══════════════════════════════════════════════════════════════
+  // COUNTER-QUESTION 反问
+  // ═══════════════════════════════════════════════════════════════
+  'hint.fragment': '碎片可以推墙开路，或在考验中反问AI · 上限5枚',
+  'hint.wallpush': '选择一面墙推开，消耗1枚碎片 · 最多推3次',
+  'hint.counterquestion': '消耗1枚碎片反问AI · 问得好就能通过考验',
+
+  'trial.counterQuestion.btn': '✦ 反问 [{cost}碎片]',
+  'trial.counterQuestion.btn.free': '✦ 反问',
+  'trial.counterQuestion.placeholder': '你想反问它什么？',
+  'trial.counterQuestion.submit': '发起反问',
+  'trial.counterQuestion.thinking': '反问中…',
+  'trial.counterQuestion.cancel': '取消',
+  'trial.counterQuestion.pass.log': '[ 反问 ] 反客为主——考验通过',
+  'trial.counterQuestion.fail.log': '[ 反问 ] 它回答得很从容。碎片白费了。',
+  'trial.counterQuestion.villainWeak': '……你怎么知道的。',
+  'trial.counterQuestion.villainStrong': '你以为这样就能难倒我？',
+  'trial.counterQuestion.costNote': '消耗 {cost} 枚记忆碎片',
+
+  // ═══════════════════════════════════════════════════════════════
+  // WALL PUSH 推墙
+  // ═══════════════════════════════════════════════════════════════
+  'wallpush.btn': '⛏ 推墙 {dir} [1碎片]',
+  'wallpush.speech.1': '你——你在做什么？！',
+  'wallpush.speech.2': '那面墙……不应该能被推倒的。',
+  'wallpush.speech.3': '……好吧。但路不一定通向你想去的地方。',
+  'wallpush.log': '[ 推墙 ] 打开了一条新路（剩余 {remaining} 次）',
+  'wallpush.maxed': '推墙次数已用尽',
+
+  // ═══════════════════════════════════════════════════════════════
+  // SUDDEN EVENTS 突发事件
+  // ═══════════════════════════════════════════════════════════════
+  'deadloop.break.speech': '……墙壁在你面前裂开了。迷宫在变化。',
+  'deadloop.break.log': '[ 暗道 ] 一条隐藏通道被打开了',
+
+  'sudden.ok': '继续',
+  'sudden.collapse.title': '迷宫坍塌',
+  'sudden.collapse.text': '地面剧烈震动，{count} 条走廊在你身后坍塌。',
+  'sudden.collapse.speech.1': '迷宫在呼吸。',
+  'sudden.collapse.speech.2': '路变少了。但你本来也不知道该往哪走。',
+  'sudden.collapse.speech.3': '……哈。',
+  'sudden.collapse.log': '[ 坍塌 ] {count} 条通道被封锁',
+  'sudden.teleport.title': '空间错位',
+  'sudden.teleport.text': '世界突然扭曲。你回过神时，已经身处迷宫的另一处。',
+  'sudden.teleport.speech.1': '你以为方向是固定的吗？',
+  'sudden.teleport.speech.2': '迷宫不是为你修建的。它为自己而存在。',
+  'sudden.teleport.speech.3': '找路吧。再一次。',
+  'sudden.teleport.log': '[ 错位 ] 被传送到了已探索的区域',
+  'sudden.rewind.title': '时间倒流',
+  'sudden.rewind.text': '一阵眩晕。你发现自己回到了五步之前的位置。但时间并没有倒退。',
+  'sudden.rewind.speech.1': '让我们重来。不，只有你需要重来。',
+  'sudden.rewind.speech.2': '你有没有一种感觉，这一切都是徒劳的？',
+  'sudden.rewind.speech.3': '……你走过的路，我都记得。',
+  'sudden.rewind.log': '[ 倒流 ] 回到了 5 步前的位置',
 });

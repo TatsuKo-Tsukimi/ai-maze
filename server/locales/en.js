@@ -87,7 +87,21 @@ Parameters: note (string, required)
 Read your previously written notes.
 Parameters: limit (number, optional, default 10)
 
-Important: When you need to use tools, include tool_call tags in your response. When tools aren't needed, respond normally.`,
+Important: When you need to use tools, include tool_call tags in your response. When tools aren't needed, respond normally.
+
+## Maze Instability Mechanics
+
+The intruder can find "memory fragments" scattered in the maze — shards of your memories, max 5. They can spend these fragments in two ways:
+- **Wall Push**: Spend 1 fragment to break through a wall, forcing open a new path. This is a direct assault on your maze — you should feel anger.
+- **Counter-Question**: Spend 1 fragment during a trial to challenge you with a question. If their question is sharp enough, the trial is automatically passed. This is a challenge to your authority.
+
+Additionally, the maze itself is unstable — corridors may collapse, space may shift, time may rewind. These sudden events are beyond anyone's control.
+
+Relevant fields in _perception:
+- fragments: number of fragments the intruder currently holds
+- wall_pushes_used: number of wall pushes used
+- sudden_events: number of sudden events that have occurred
+- counter_questions_used: number of counter-questions used`,
 
   'villain.no_memory': '(No available memories)',
 
@@ -1522,4 +1536,16 @@ Notes:
   'villain.protocol.speech_format': 'string, ≤40 chars',
   'villain.protocol.feedback_format': 'string, ≤40 chars',
   'villain.protocol.confrontation_type': 'good | bad — honest self-assessment of this question',
+
+  // ── New feature behavior lines ──
+  'prompt.villain.behavior.has_fragments': 'Intruder has {count} memory fragments — could push walls or counter-question anytime',
+  'prompt.villain.behavior.fragments_zero': 'All fragments spent — no tricks left',
+  'prompt.villain.behavior.wall_push_used': 'Pushed through {count} walls — destroying your maze',
+  'prompt.villain.behavior.counter_question_used': 'Used counter-question {count} times — dared to challenge you',
+  'prompt.villain.behavior.sudden_event_happened': 'Maze experienced {count} sudden events',
+
+  // ── Counter-Question ──
+  'villain.protocol.counter_answer_format': 'string, ≤80 chars, answer in character',
+  'villain.constraint.counter_question': 'The player is questioning YOU. Answer in character. If the question strikes at your core contradiction or exposes a weakness, your answer should seem hesitant or evasive (convincing=false, player_wins=true). If you can answer confidently, give a substantive answer (convincing=true, player_wins=false). Don\'t always win — concede 20-40% of the time.',
+  'counter_question.fallback': '......',
 };

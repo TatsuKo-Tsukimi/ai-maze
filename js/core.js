@@ -1,8 +1,16 @@
 // ═══════════════════════════════════════════════════════════════
 // CONFIGURATION
 // ═══════════════════════════════════════════════════════════════
-const GRID_W = 21, GRID_H = 27;
+const GRID_W = 15, GRID_H = 19;
 const CELL_WALL = 0, CELL_PATH = 1, CELL_EXIT = 2;
+
+// ── New gameplay constants ──
+const MAX_FRAGMENTS = 5;
+const MAX_WALL_PUSHES = 3;
+const MAX_SUDDEN_EVENTS = 3;
+const FRAGMENT_SPAWN_CHANCE = 0.20;
+const SUDDEN_EVENT_CHANCE = 0.08;
+const SUDDEN_EVENT_MIN_STEP = 10;
 
 // Mode flags (set during init)
 let serverMode = false;
@@ -146,7 +154,7 @@ let FALLBACK_TRIAL = {};
 function _buildFallbackLines() {
   _baseFallback = Array.from({length: 18}, (_, i) => t(`villain.fallback.${i + 1}`));
   _veteranFallback = Array.from({length: 12}, (_, i) => t(`villain.veteran.${i + 1}`));
-  FALLBACK_TRIALS = Array.from({length: 6}, (_, i) => ({
+  FALLBACK_TRIALS = Array.from({length: 20}, (_, i) => ({
     prompt: t(`trial.fallback.prompt.${i + 1}`),
     evaluation_guide: t(`trial.fallback.eval.${i + 1}`),
     hint: '',
@@ -200,6 +208,8 @@ const state = {
   playerPos: { x:1, y:1 }, exitPos: { x:GRID_W-2, y:GRID_H-2 }, // overwritten by generateMaze()
   steps: 0, depth: 0, history: [],
   hp: 3, godHandCount: 0,
+  fragments: 0, wallPushCount: 0, suddenEventCount: 0, counterQuestionCount: 0,
+  _counterQuestionMode: false,
   minigameFailCount: 0, minigameReturnPos: null,
   currentMechanism: null,
   /** 游戏阶段：idle | moving | event | trial | gameover */
@@ -348,6 +358,10 @@ function buildGameState() {
     gameId: state.villainGameId,
     active_mechanism: activeMechanism,
     recent_decisions: recentDecisions,
+    fragments: state.fragments,
+    wall_pushes_used: state.wallPushCount,
+    sudden_events: state.suddenEventCount,
+    counter_questions_used: state.counterQuestionCount,
     // ── Raw behavioral signals (agent interprets, harness doesn't) ──
     behavior: {
       play_time_ms: playTimeMs,
@@ -421,6 +435,21 @@ function logHpEvent(cause, delta) {
       hpBefore: hpAfter - delta,
       hpAfter,
       step: state.steps || 0,
+    }),
+  }).catch(() => {});
+}
+
+// ── Generic game event logging (fire-and-forget) ────────────────
+function logGameEvent(eventType, data) {
+  if (!serverMode || !state.villainGameId) return;
+  fetch('/api/game-event', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      gameId: state.villainGameId,
+      event: eventType,
+      step: state.steps || 0,
+      ...data,
     }),
   }).catch(() => {});
 }
