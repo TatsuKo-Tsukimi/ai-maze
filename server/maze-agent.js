@@ -50,6 +50,7 @@ const EVENT_POLICIES = {
   game_end:            { allowTools: false, requireJson: true, prefill: true, maxTokens: 200 },
   trial_request:       { allowTools: true,  requireJson: false, prefill: false, maxTokens: 800 },
   temptation_prepare:  { allowTools: true,  requireJson: false, prefill: false, maxTokens: 400 },
+  counter_question:    { allowTools: false, requireJson: true, prefill: true, maxTokens: 300 },
   // init (startSession) uses its own path, not sendEvent
 };
 const DEFAULT_POLICY = { allowTools: true, requireJson: false, prefill: false, maxTokens: 800 };
@@ -922,6 +923,20 @@ function buildEventMessage(eventType, eventData, perception) {
         mood: 'optional: curious|mocking|satisfied|angry|anxious|default',
       };
       _protocol.constraints = _t('villain.constraint.epilogue');
+      break;
+
+    case 'counter_question':
+      Object.assign(msg, {
+        trial_prompt: eventData.trial_prompt || '',
+        counter_question: eventData.counter_question || '',
+      });
+      _protocol.response_format = {
+        villain_answer: _t('villain.protocol.counter_answer_format'),
+        convincing: 'boolean — true if your answer is confident and substantive, false if you were caught off guard',
+        player_wins: 'boolean — opposite of convincing',
+        mood: 'optional: curious|mocking|satisfied|angry|anxious|default',
+      };
+      _protocol.constraints = _t('villain.constraint.counter_question');
       break;
 
     default:

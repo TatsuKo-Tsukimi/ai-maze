@@ -22,3 +22,21 @@ data/villain-notes.jsonl
 data/lure-allocation-state.json
 data/themes.json
 data-seed/
+
+# Simulation / playtest outputs (regenerated on each run)
+scripts/*-results*.json
+scripts/batch-results*.json
+scripts/sim-report.md
+scripts/game_ai_*.json
+scripts/playtest_*.txt
+scripts/game-log.txt
+scripts/headless-game-log.txt
+scripts/player-decisions.json
+scripts/villain-content.json
+scripts/game*.json
+game*.json
+game*_out.json
+playtest*_sim.py
+scripts/_dice.py
+scripts/_pathfind.py
+scripts/sim2.py

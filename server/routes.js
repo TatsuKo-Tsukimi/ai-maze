@@ -242,6 +242,23 @@ function createRoutes(ctx) {
       return;
     }
 
+    // POST /api/game-event — Generic gameplay event logging (fragments, wall push, sudden events)
+    if (req.method === 'POST' && req.url === '/api/game-event') {
+      let data = {};
+      try { data = JSON.parse(await readBody(req)); } catch {}
+      const gameId = data.gameId || null;
+      if (gameId) {
+        ctx.sessionLog(gameId, {
+          event: data.event || 'unknown',
+          step: data.step ?? null,
+          ...data,
+        });
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
     // POST /api/card
     if (req.method === 'POST' && req.url === '/api/card') {
       let gs = {};
@@ -528,6 +545,60 @@ function createRoutes(ctx) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(result));
       }
+      return;
+    }
+
+    // POST /api/judge/counter-question — Feature 2: Counter-Question (player challenges villain)
+    if (req.method === 'POST' && req.url === '/api/judge/counter-question') {
+      let data = {};
+      try { data = JSON.parse(await readBody(req)); } catch {}
+      const _cqGameId = data.gameId || null;
+
+      ctx.sessionLog(_cqGameId, {
+        event: 'counter_question',
+        trial_prompt: (data.trial_prompt || '').slice(0, 200),
+        counter_question: (data.counter_question || '').slice(0, 200),
+      });
+
+      if (_cqGameId && mazeAgent.hasSession(_cqGameId)) {
+        try {
+          const perception = {
+            hp: data.hp ?? 3,
+            step: data.steps || 0,
+            gameId: _cqGameId,
+          };
+          const eventMsg = mazeAgent.buildEventMessage('counter_question', {
+            trial_prompt: data.trial_prompt || '',
+            counter_question: data.counter_question || '',
+          }, perception);
+          const raw = await mazeAgent.sendEvent(_cqGameId, eventMsg);
+          const parsed = mazeAgent.parseAgentResponse(raw);
+
+          if (parsed) {
+            const playerWins = parsed.convincing === false || parsed.player_wins === true;
+            const result = {
+              player_wins: playerWins,
+              villain_answer: parsed.villain_answer || parsed.speech_line || '……',
+              mood: parsed.mood || 'default',
+            };
+            ctx.sessionLog(_cqGameId, { event: 'counter_question_result', ...result });
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(result));
+            return;
+          }
+        } catch (e) {
+          log.warn('routes', 'counter-question LLM failed: ' + (e.message || '').slice(0, 80));
+        }
+      }
+
+      // Fallback: 40% player wins
+      const _cqFallback = {
+        player_wins: Math.random() < 0.4,
+        villain_answer: _t('counter_question.fallback'),
+        mood: 'default',
+      };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(_cqFallback));
       return;
     }
 

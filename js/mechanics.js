@@ -39,7 +39,46 @@ function updatePressureAtmosphere() {
 
 function buildChoices() {
   const { x, y } = state.playerPos;
-  const neighbors = getNeighbors(x, y);
+  let neighbors = getNeighbors(x, y);
+
+  // ── Dead-loop breaker: if ALL neighbors are visited, auto-open a wall ──
+  const allVisited = neighbors.length > 0 && neighbors.every(n => state.visited.has(posKey(n.x, n.y)));
+  if (allVisited) {
+    state._deadLoopCount = (state._deadLoopCount || 0) + 1;
+    if (state._deadLoopCount >= 2) {
+      // Find a wall to open — prefer direction toward exit
+      const wallDirs = [[0,-1],[0,1],[-1,0],[1,0]];
+      const exitDx = Math.sign(state.exitPos.x - x);
+      const exitDy = Math.sign(state.exitPos.y - y);
+      // Sort: prefer exit direction first
+      wallDirs.sort((a, b) => {
+        const scoreA = (a[0] === exitDx ? 2 : 0) + (a[1] === exitDy ? 2 : 0);
+        const scoreB = (b[0] === exitDx ? 2 : 0) + (b[1] === exitDy ? 2 : 0);
+        return scoreB - scoreA;
+      });
+      for (const [dx, dy] of wallDirs) {
+        const wx = x + dx, wy = y + dy;
+        if (wx <= 0 || wy <= 0 || wx >= GRID_W - 1 || wy >= GRID_H - 1) continue;
+        if (state.maze[wy][wx] !== CELL_WALL) continue;
+        // Open this wall + cell beyond if possible
+        state.maze[wy][wx] = CELL_PATH;
+        const bx = wx + dx, by = wy + dy;
+        if (bx > 0 && by > 0 && bx < GRID_W - 1 && by < GRID_H - 1 && state.maze[by][bx] === CELL_WALL) {
+          state.maze[by][bx] = CELL_PATH;
+        }
+        state._deadLoopCount = 0;
+        renderMinimap();
+        setAiSpeech(t('deadloop.break.speech'));
+        logEntry(t('deadloop.break.log'), 'important');
+        logGameEvent('dead_loop_break', { position: posKey(x, y) });
+        neighbors = getNeighbors(x, y); // refresh
+        break;
+      }
+    }
+  } else {
+    state._deadLoopCount = 0;
+  }
+
   _currentNeighbors = neighbors;
   _kbdFocusIdx = -1;
   const choiceArea = document.getElementById('choice-area');
@@ -73,6 +112,32 @@ function buildChoices() {
     btn.dataset.dir = nb.dir;
     btn.onclick = () => movePlayer(nb.x, nb.y, isBack);
     choiceArea.appendChild(btn);
+  }
+
+  // ── Wall Push buttons (Feature 3) ──
+  if (state.fragments >= 1 && state.wallPushCount < MAX_WALL_PUSHES) {
+    checkFirstWallPushHint();
+    const dirLabels = [
+      { dx:0, dy:-1, label: t('direction.north') },
+      { dx:0, dy:1,  label: t('direction.south') },
+      { dx:-1,dy:0,  label: t('direction.west') },
+      { dx:1, dy:0,  label: t('direction.east') },
+    ];
+    for (const wd of dirLabels) {
+      const wx = x + wd.dx, wy = y + wd.dy;
+      // Target must be a wall, within bounds (not border)
+      if (wx <= 0 || wy <= 0 || wx >= GRID_W - 1 || wy >= GRID_H - 1) continue;
+      if (state.maze[wy][wx] !== CELL_WALL) continue;
+      // Cell beyond (2-deep push target)
+      const bx = wx + wd.dx, by = wy + wd.dy;
+      if (bx <= 0 || by <= 0 || bx >= GRID_W - 1 || by >= GRID_H - 1) continue;
+
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn wall-push-btn';
+      btn.innerHTML = t('wallpush.btn', { dir: wd.label });
+      btn.onclick = () => executeWallPush(wx, wy, bx, by);
+      choiceArea.appendChild(btn);
+    }
   }
 }
 
@@ -277,9 +342,39 @@ async function movePlayer(nx, ny, isBack) {
     setTimeout(() => stepEl.classList.remove('step-tick'), 400);
   }
   flashCounter('step-count');
+  const _isNewCell = !state.visited.has(posKey(nx, ny));
   visit(nx, ny);
   audio.updateAmbientDepth(state.depth);
   particles.updateDepth(state.depth);
+
+  // ── Feature 1: Memory Fragment spawning (20% on NEW non-backtrack cell) ──
+  // Suppressed when a mechanism card fires this move (card.type !== 'none' check below)
+  const _hasMechanism = card.type !== 'none' && card.id !== 'EMPTY';
+  if (!isBack && _isNewCell && !_hasMechanism
+      && state.fragments < MAX_FRAGMENTS && Math.random() < FRAGMENT_SPAWN_CHANCE) {
+    state.fragments++;
+    updateFragmentHUD();
+    audio.playFragmentFound?.();
+    checkFirstFragmentHint();
+    logGameEvent('fragment_found', { count: state.fragments, source: 'movement' });
+    logEntry(t('fragment.found.log', { count: state.fragments, max: MAX_FRAGMENTS }), 'important');
+    Timers.set('fragment-found', () => {
+      showEventOverlay(
+        t('fragment.found.title'),
+        t('fragment.found.text'),
+        [{ label: t('fragment.found.ok'), onClick: () => {} }]
+      );
+    }, 300);
+  }
+
+  // ── Feature 5: Sudden Events (8% after step 15, max 3 per game) ──
+  if (state.steps >= SUDDEN_EVENT_MIN_STEP
+      && state.suddenEventCount < MAX_SUDDEN_EVENTS
+      && !_hasMechanism
+      && !isEventOverlayActive() && !isMinigameActive()
+      && Math.random() < SUDDEN_EVENT_CHANCE) {
+    Timers.set('sudden-event', () => triggerSuddenEvent(), 500);
+  }
 
   // ── 66-step maze-lost check ──────────────────────────────────
   const MAX_STEPS = 66;
@@ -378,7 +473,7 @@ async function movePlayer(nx, ny, isBack) {
       // Calm moments: AI is confident, half-lidded — it can afford to relax
       setEyeEmotion('satisfied', 5000);
       const reliefRoll = Math.random();
-      if (reliefRoll < 0.05 && state.hp < 3) {
+      if (reliefRoll < 0.15 && state.hp < 3) {
         // ── 5% 恢复 1 HP ──
         const healEvents = [
           { title: t('relief.heal.warmth.title'), text: t('relief.heal.warmth.text') },
@@ -505,6 +600,207 @@ function resetIdleWhisper() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// FRAGMENT HUD HELPER
+// ═══════════════════════════════════════════════════════════════
+function updateFragmentHUD() {
+  const el = document.getElementById('fragment-count');
+  if (el) {
+    el.textContent = state.fragments;
+    el.classList.remove('fragment-tick');
+    void el.offsetWidth;
+    el.classList.add('fragment-tick');
+    setTimeout(() => el.classList.remove('fragment-tick'), 400);
+  }
+  flashCounter('fragment-count');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WALL PUSH (Feature 3)
+// ═══════════════════════════════════════════════════════════════
+function executeWallPush(wx, wy, bx, by) {
+  if (state.fragments < 1 || state.wallPushCount >= MAX_WALL_PUSHES) return;
+  if (!inMode('idle')) return;
+  state.fragments--;
+  state.wallPushCount++;
+  updateFragmentHUD();
+  logGameEvent('wall_push', { fragments_remaining: state.fragments, pushes_remaining: MAX_WALL_PUSHES - state.wallPushCount });
+
+  // Open the wall cell
+  state.maze[wy][wx] = CELL_PATH;
+  // Open the cell beyond if also wall (2-deep, like DFS step)
+  if (by >= 1 && by < GRID_H - 1 && bx >= 1 && bx < GRID_W - 1 && state.maze[by][bx] === CELL_WALL) {
+    state.maze[by][bx] = CELL_PATH;
+  }
+
+  renderMinimap();
+  buildChoices();
+
+  // Villain local reaction (no LLM call)
+  const lines = [t('wallpush.speech.1'), t('wallpush.speech.2'), t('wallpush.speech.3')];
+  setAiSpeech(randomOf(lines));
+  setEyeEmotion('angry', 4000);
+  audio.playWallPush?.();
+  logEntry(t('wallpush.log', { remaining: MAX_WALL_PUSHES - state.wallPushCount }), 'important');
+  logDecision('wall-push', { target: posKey(wx, wy), fragmentsLeft: state.fragments, pushesLeft: MAX_WALL_PUSHES - state.wallPushCount });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SUDDEN EVENTS (Feature 5)
+// ═══════════════════════════════════════════════════════════════
+function triggerSuddenEvent() {
+  if (isEventOverlayActive() || isMinigameActive()) return;
+  state.suddenEventCount++;
+  const roll = Math.random();
+  if (roll < 0.40) {
+    triggerMazeCollapse();
+  } else if (roll < 0.75) {
+    triggerTeleportation();
+  } else {
+    triggerTimeRewind();
+  }
+}
+
+function _bfsReachable(fromX, fromY, toX, toY, maze) {
+  const key = (x, y) => `${x},${y}`;
+  const q = [{ x: fromX, y: fromY }];
+  const visited = new Set([key(fromX, fromY)]);
+  while (q.length > 0) {
+    const { x, y } = q.shift();
+    if (x === toX && y === toY) return true;
+    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+      const nx = x + dx, ny = y + dy;
+      const k = key(nx, ny);
+      if (nx >= 0 && ny >= 0 && nx < GRID_W && ny < GRID_H && !visited.has(k) && maze[ny][nx] !== CELL_WALL) {
+        visited.add(k);
+        q.push({ x: nx, y: ny });
+      }
+    }
+  }
+  return false;
+}
+
+function triggerMazeCollapse() {
+  logGameEvent('sudden_event', { type: 'collapse' });
+  const candidates = [];
+  for (let y = 1; y < GRID_H - 1; y++) {
+    for (let x = 1; x < GRID_W - 1; x++) {
+      if (state.maze[y][x] !== CELL_PATH) continue;
+      if (x === state.playerPos.x && y === state.playerPos.y) continue;
+      if (x === state.exitPos.x && y === state.exitPos.y) continue;
+      // Skip chokepoints (cells with <= 1 path neighbor)
+      const pathCount = [[0,-1],[0,1],[-1,0],[1,0]]
+        .filter(([dx,dy]) => {
+          const nx = x+dx, ny = y+dy;
+          return nx >= 0 && ny >= 0 && nx < GRID_W && ny < GRID_H && state.maze[ny][nx] !== CELL_WALL;
+        }).length;
+      if (pathCount <= 1) continue;
+      candidates.push({ x, y });
+    }
+  }
+  shuffle(candidates);
+  const count = Math.min(3 + Math.floor(Math.random() * 3), candidates.length);
+  const collapsed = [];
+  for (let i = 0; i < count && i < candidates.length; i++) {
+    const cell = candidates[i];
+    state.maze[cell.y][cell.x] = CELL_WALL;
+    // BFS safety: verify player → exit still reachable
+    if (!_bfsReachable(state.playerPos.x, state.playerPos.y, state.exitPos.x, state.exitPos.y, state.maze)) {
+      state.maze[cell.y][cell.x] = CELL_PATH; // rollback
+      continue;
+    }
+    collapsed.push(cell);
+  }
+  if (collapsed.length === 0) { state.suddenEventCount--; return; }
+
+  renderMinimap();
+  buildChoices();
+
+  document.body.classList.add('maze-collapse-shake');
+  setTimeout(() => document.body.classList.remove('maze-collapse-shake'), 600);
+
+  const lines = [t('sudden.collapse.speech.1'), t('sudden.collapse.speech.2'), t('sudden.collapse.speech.3')];
+  setAiSpeech(randomOf(lines));
+  setEyeEmotion('satisfied', 5000);
+  audio.playMazeCollapse?.();
+  logEntry(t('sudden.collapse.log', { count: collapsed.length }), 'danger');
+
+  showEventOverlay(
+    t('sudden.collapse.title'),
+    t('sudden.collapse.text', { count: collapsed.length }),
+    [{ label: t('sudden.ok'), onClick: () => {} }]
+  );
+}
+
+function triggerTeleportation() {
+  logGameEvent('sudden_event', { type: 'teleport' });
+  const visitedCells = [...state.visited]
+    .map(k => { const [x, y] = k.split(',').map(Number); return { x, y }; })
+    .filter(c => !(c.x === state.playerPos.x && c.y === state.playerPos.y)
+                 && state.maze[c.y]?.[c.x] !== CELL_WALL); // must still be walkable
+
+  if (visitedCells.length === 0) { state.suddenEventCount--; return; }
+
+  const target = randomOf(visitedCells);
+  state.playerPos = { x: target.x, y: target.y };
+  // Truncate history to nearest occurrence of target, or clear
+  const histIdx = state.history.findIndex(h => h.x === target.x && h.y === target.y);
+  if (histIdx >= 0) {
+    state.history = state.history.slice(0, histIdx + 1);
+  } else {
+    state.history = [];
+  }
+  state.depth = state.history.length;
+  UI.setText('depth-count', state.depth);
+
+  renderScene({ card: { type: 'none' } });
+  renderMinimap();
+  buildChoices();
+
+  document.body.classList.add('teleport-flash');
+  setTimeout(() => document.body.classList.remove('teleport-flash'), 600);
+
+  const lines = [t('sudden.teleport.speech.1'), t('sudden.teleport.speech.2'), t('sudden.teleport.speech.3')];
+  setAiSpeech(randomOf(lines));
+  setEyeEmotion('mocking', 5000);
+  audio.playTeleport?.();
+  logEntry(t('sudden.teleport.log'), 'danger');
+
+  showEventOverlay(
+    t('sudden.teleport.title'),
+    t('sudden.teleport.text'),
+    [{ label: t('sudden.ok'), onClick: () => {} }]
+  );
+}
+
+function triggerTimeRewind() {
+  if (state.history.length < 5) { state.suddenEventCount--; return; }
+  logGameEvent('sudden_event', { type: 'rewind' });
+
+  const rewindTarget = state.history[state.history.length - 5];
+  state.history = state.history.slice(0, state.history.length - 5);
+  state.playerPos = { x: rewindTarget.x, y: rewindTarget.y };
+  state.depth = state.history.length;
+  UI.setText('depth-count', state.depth);
+  // Steps are NOT reduced — time penalty
+
+  renderScene({ card: { type: 'none' } });
+  renderMinimap();
+  buildChoices();
+
+  const lines = [t('sudden.rewind.speech.1'), t('sudden.rewind.speech.2'), t('sudden.rewind.speech.3')];
+  setAiSpeech(randomOf(lines));
+  setEyeEmotion('curious', 5000);
+  audio.playTimeRewind?.();
+  logEntry(t('sudden.rewind.log'), 'danger');
+
+  showEventOverlay(
+    t('sudden.rewind.title'),
+    t('sudden.rewind.text'),
+    [{ label: t('sudden.ok'), onClick: () => {} }]
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MECHANISMS
 // ═══════════════════════════════════════════════════════════════
 // showEventOverlay, hideEventOverlay, isEventOverlayActive, isMinigameActive → moved to js/overlays.js
@@ -585,8 +881,26 @@ function triggerMechanism(card, isBack) {
       }
 
       // ── Helper: apply temptation result (shared by inline + overlay paths) ──
+      // Three-way split: 55% intel, 20% fragment reward, 25% trap
       function _applyTemptationResult(card, lureMat, lureTitle, fetchVillainReaction) {
-        const lureGetsIntel = Math.random() < 0.5;
+        const roll = Math.random();
+        const lureGetsIntel = roll < 0.55;
+        const lureGetsFragment = !lureGetsIntel && roll < 0.75 && state.fragments < MAX_FRAGMENTS;
+        // else: trap (25%, or fragment fallback to trap when at max)
+
+        if (lureGetsFragment) {
+          // ── Fragment reward path (Feature 4) ──
+          state.fragments++;
+          updateFragmentHUD();
+          checkFirstFragmentHint();
+          logGameEvent('fragment_found', { count: state.fragments, source: 'temptation' });
+          logDecision('lure-follow', { card: card.id, personal: !!lureMat, fragment: true });
+          setAiSpeech(t('fragment.lure.speech'));
+          logEntry(t('fragment.lure.log', { count: state.fragments, max: MAX_FRAGMENTS }), 'important');
+          fetchVillainReaction('temptation_follow_fragment', 'fragment+1');
+          return;
+        }
+
         logDecision('lure-follow', { card: card.id, personal: !!lureMat, hpLost: !lureGetsIntel });
         if (lureGetsIntel) {
           const hint = getDirectionalHint(true);
@@ -835,13 +1149,17 @@ function triggerMechanism(card, isBack) {
               // 乱码/不可読内容 → 100% 陷阱
               const lureDesc = (enhancedLure?.description || "") + (enhancedLure?.lureHook || "");
               const isGarbled = /�/.test(lureDesc) || lureDesc.length < 5;
-              const lureGetsIntel = isGarbled ? false : Math.random() < 0.5;
+              const _lureRoll = isGarbled ? 1.0 : Math.random();
+              const lureGetsIntel = _lureRoll < 0.55;
+              const _lureGetsFragment = !lureGetsIntel && _lureRoll < 0.75 && state.fragments < MAX_FRAGMENTS;
               const hint = lureGetsIntel ? getDirectionalHint(true) : null;
               // Include file context so result text references the actual lure material
               const lureName = (enhancedLure.path || lureMat.preview || '').split('/').pop() || t('lure.enhanced.unknown');
-              const preResult = lureGetsIntel
-                ? { type: 'clue', text: t('lureViewer.exitHintDefault', { hint }), fileName: lureName }
-                : { type: 'trap', text: t('lureViewer.trapDefault'), fileName: lureName };
+              const preResult = _lureGetsFragment
+                ? { type: 'fragment', text: t('fragment.lure.text'), fileName: lureName }
+                : lureGetsIntel
+                  ? { type: 'clue', text: t('lureViewer.exitHintDefault', { hint }), fileName: lureName }
+                  : { type: 'trap', text: t('lureViewer.trapDefault'), fileName: lureName };
 
               const lureData = {
                 ...enhancedLure,
@@ -855,8 +1173,19 @@ function triggerMechanism(card, isBack) {
                 result: preResult,
                 prefetchedNarrative: _preNarrativePromise || null,
                 onClose: () => {
-                  // Apply game state based on pre-computed outcome
-                  _applyPrecomputedResult(card, lureMat, lureTitle, fetchVillainReaction, lureGetsIntel, hint);
+                  if (_lureGetsFragment) {
+                    // Fragment reward via enhanced lure overlay
+                    state.fragments++;
+                    updateFragmentHUD();
+                    checkFirstFragmentHint();
+                    logGameEvent('fragment_found', { count: state.fragments, source: 'temptation' });
+                    logDecision('lure-follow', { card: card.id, personal: !!lureMat, fragment: true });
+                    setAiSpeech(t('fragment.lure.speech'));
+                    logEntry(t('fragment.lure.log', { count: state.fragments, max: MAX_FRAGMENTS }), 'important');
+                    fetchVillainReaction('temptation_follow_fragment', 'fragment+1');
+                  } else {
+                    _applyPrecomputedResult(card, lureMat, lureTitle, fetchVillainReaction, lureGetsIntel, hint);
+                  }
                 },
               });
               return;
@@ -878,7 +1207,7 @@ function triggerMechanism(card, isBack) {
             setAiSpeech(line); logEntry(t('lure.ignore.log'));
             // Avoidance penalty: every 3rd avoidance (retreat + lure-ignore) costs 1 HP
             state._avoidanceCount = (state._avoidanceCount || 0) + 1;
-            if (state._avoidanceCount % 3 === 0) {
+            if (state._avoidanceCount % 5 === 0) {
               state.hp = Math.max(0, state.hp - 1);
               updateHearts();
               logHpEvent('avoidance_penalty', -1);
@@ -1439,6 +1768,24 @@ function showHint(key, text, durationMs = 4000) {
     hint.classList.remove('visible');
     setTimeout(() => hint.remove(), 500);
   }, durationMs);
+}
+
+// Persistent hints (show once across ALL sessions via localStorage)
+function showPersistentHint(key, text, durationMs = 5000) {
+  if (_hintShown.has(key)) return;
+  try { if (localStorage.getItem('hint_' + key)) { _hintShown.add(key); return; } } catch {}
+  _hintShown.add(key);
+  try { localStorage.setItem('hint_' + key, '1'); } catch {}
+  showHint(key, text, durationMs);
+}
+function checkFirstFragmentHint() {
+  showPersistentHint('fragment', t('hint.fragment'), 5000);
+}
+function checkFirstWallPushHint() {
+  showPersistentHint('wallpush', t('hint.wallpush'), 5000);
+}
+function checkFirstCounterQuestionHint() {
+  showPersistentHint('counterquestion', t('hint.counterquestion'), 5000);
 }
 
 // Hook into game events for contextual hints

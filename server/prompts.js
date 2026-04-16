@@ -382,6 +382,17 @@ function buildVillainUserMessage(gameState, cardRole) {
   const godHandUsed = gameState.god_hand_used || 0;
   if (godHandUsed > 0)          behaviorLines.push(_t('prompt.villain.behavior.god_hand', { count: godHandUsed }));
 
+  // Fragment & new feature awareness
+  const fragments = gameState.fragments || 0;
+  const wallPushes = gameState.wall_pushes_used || 0;
+  const cqUsed = gameState.counter_questions_used || 0;
+  const suddenEvents = gameState.sudden_events || 0;
+  if (fragments >= 3)            behaviorLines.push(_t('prompt.villain.behavior.has_fragments', { count: fragments }));
+  else if (fragments === 0 && (wallPushes > 0 || cqUsed > 0)) behaviorLines.push(_t('prompt.villain.behavior.fragments_zero'));
+  if (wallPushes > 0)            behaviorLines.push(_t('prompt.villain.behavior.wall_push_used', { count: wallPushes }));
+  if (cqUsed > 0)                behaviorLines.push(_t('prompt.villain.behavior.counter_question_used', { count: cqUsed }));
+  if (suddenEvents > 0)          behaviorLines.push(_t('prompt.villain.behavior.sudden_event_happened', { count: suddenEvents }));
+
   // Retreat tracking — cowardice indicator
   const retreats = (gameState.recent_decisions || []).filter(d => d.type === 'retreat').length;
   if (retreats >= 3)            behaviorLines.push(_t('prompt.villain.behavior.retreat_many', { count: retreats }));

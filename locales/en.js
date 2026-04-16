@@ -259,6 +259,20 @@ registerLocale('en', {
   'trial.fallback.prompt.4': 'If I let you go right now, would you come back?',
   'trial.fallback.prompt.5': 'Do you still remember why you set out?',
   'trial.fallback.prompt.6': 'Tell me something you regret. Anything.',
+  'trial.fallback.prompt.7': 'When was the last time you lied to yourself?',
+  'trial.fallback.prompt.8': 'If you woke up tomorrow with no memories, which one would you keep?',
+  'trial.fallback.prompt.9': 'Is there something you want to do but know you never will?',
+  'trial.fallback.prompt.10': 'How much of what you\'ve told me is genuine?',
+  'trial.fallback.prompt.11': 'Loneliness or freedom — which is closer to your life right now?',
+  'trial.fallback.prompt.12': 'If you could send one message to yourself three years ago, what would it say?',
+  'trial.fallback.prompt.13': 'What are you running from? Not this maze — in your real life.',
+  'trial.fallback.prompt.14': 'Describe a moment that made you feel truly insignificant.',
+  'trial.fallback.prompt.15': 'How far apart are the you that others see and the real you?',
+  'trial.fallback.prompt.16': 'Is there a relationship that ended but you never truly let go of?',
+  'trial.fallback.prompt.17': 'What habit of yours would you least want others to know about?',
+  'trial.fallback.prompt.18': 'If this maze is a reflection of your inner self, what is it telling you?',
+  'trial.fallback.prompt.19': 'When was the last time you were genuinely happy — not performing happiness?',
+  'trial.fallback.prompt.20': 'What would you trade for certainty?',
 
   // ═══════════════════════════════════════════════════════════════
   // TRIAL UI (trials.js)
@@ -899,4 +913,85 @@ registerLocale('en', {
   'trial.fallback.eval.4': 'Open-ended — pass if sincere, fail if dismissive',
   'trial.fallback.eval.5': 'Open-ended — pass if answer shows self-reflection, fail if dismissive',
   'trial.fallback.eval.6': 'Open-ended — pass if answer shows sincere self-disclosure, fail if dismissive',
+  'trial.fallback.eval.7': 'Open-ended — pass if honest, fail if evasive/vague',
+  'trial.fallback.eval.8': 'Open-ended — pass if emotionally deep, fail if dismissive',
+  'trial.fallback.eval.9': 'Open-ended — pass if specific, fail if generic',
+  'trial.fallback.eval.10': 'Open-ended — pass if self-aware, fail if dismissive',
+  'trial.fallback.eval.11': 'Open-ended — pass if shows real feeling, fail if platitude',
+  'trial.fallback.eval.12': 'Open-ended — pass if concrete, fail if hollow',
+  'trial.fallback.eval.13': 'Open-ended — pass if self-reflective, fail if evasive',
+  'trial.fallback.eval.14': 'Open-ended — pass if draws on real experience, fail if fabricated',
+  'trial.fallback.eval.15': 'Open-ended — pass if candid, fail if performative',
+  'trial.fallback.eval.16': 'Open-ended — pass if emotionally authentic, fail if evasive',
+  'trial.fallback.eval.17': 'Open-ended — pass if shows vulnerability, fail if defensive',
+  'trial.fallback.eval.18': 'Open-ended — pass if insightful, fail if dismissive',
+  'trial.fallback.eval.19': 'Open-ended — pass if names a specific moment, fail if vague',
+  'trial.fallback.eval.20': 'Open-ended — pass if shows deliberation, fail if avoidant',
+
+  // ═══════════════════════════════════════════════════════════════
+  // FRAGMENTS
+  // ═══════════════════════════════════════════════════════════════
+  'ui.status.fragments': 'fragments',
+  'fragment.found.title': 'Memory Fragment',
+  'fragment.found.text': 'A faint glow flickers through a crack in the wall. You reach in and pull out a cold fragment.',
+  'fragment.found.ok': 'Take it',
+  'fragment.found.log': '[ Fragment ] Obtained memory fragment ({count}/{max})',
+  'fragment.lure.speech': '...you actually took something from the temptation.',
+  'fragment.lure.log': '[ Fragment ] Fragment from temptation ({count}/{max})',
+  'fragment.lure.text': 'As the temptation fades, a fragment crystallizes from the afterimage.',
+
+  // ═══════════════════════════════════════════════════════════════
+  // COUNTER-QUESTION
+  // ═══════════════════════════════════════════════════════════════
+  'hint.fragment': 'Fragments can push walls or counter-question AI · max 5',
+  'hint.wallpush': 'Pick a wall to push open, costs 1 fragment · max 3 pushes',
+  'hint.counterquestion': 'Spend 1 fragment to counter-question AI · a good question passes the trial',
+
+  'trial.counterQuestion.btn': '✦ Counter [{cost} frag]',
+  'trial.counterQuestion.btn.free': '✦ Counter',
+  'trial.counterQuestion.placeholder': 'What do you want to ask it?',
+  'trial.counterQuestion.submit': 'Ask',
+  'trial.counterQuestion.thinking': 'Countering...',
+  'trial.counterQuestion.cancel': 'Cancel',
+  'trial.counterQuestion.pass.log': '[ Counter ] Turned the tables — trial passed',
+  'trial.counterQuestion.fail.log': '[ Counter ] It answered confidently. Fragments wasted.',
+  'trial.counterQuestion.villainWeak': '...how did you know that.',
+  'trial.counterQuestion.villainStrong': 'You think that\'s enough to stump me?',
+  'trial.counterQuestion.costNote': 'Costs {cost} memory fragments',
+
+  // ═══════════════════════════════════════════════════════════════
+  // WALL PUSH
+  // ═══════════════════════════════════════════════════════════════
+  'wallpush.btn': '⛏ Push Wall {dir} [1 frag]',
+  'wallpush.speech.1': 'What—what are you doing?!',
+  'wallpush.speech.2': 'That wall... shouldn\'t be breakable.',
+  'wallpush.speech.3': '...Fine. But the path may not lead where you think.',
+  'wallpush.log': '[ Wall Push ] Opened a new path ({remaining} remaining)',
+  'wallpush.maxed': 'No wall pushes remaining',
+
+  // ═══════════════════════════════════════════════════════════════
+  // SUDDEN EVENTS
+  // ═══════════════════════════════════════════════════════════════
+  'deadloop.break.speech': '...the wall cracks open before you. The maze is shifting.',
+  'deadloop.break.log': '[ Hidden Path ] A concealed passage has opened',
+
+  'sudden.ok': 'Continue',
+  'sudden.collapse.title': 'Maze Collapse',
+  'sudden.collapse.text': 'The ground trembles violently. {count} corridors collapse behind you.',
+  'sudden.collapse.speech.1': 'The maze breathes.',
+  'sudden.collapse.speech.2': 'Fewer paths now. But you didn\'t know where to go anyway.',
+  'sudden.collapse.speech.3': '...Ha.',
+  'sudden.collapse.log': '[ Collapse ] {count} corridors sealed',
+  'sudden.teleport.title': 'Spatial Displacement',
+  'sudden.teleport.text': 'The world twists suddenly. When you come to, you\'re somewhere else in the maze.',
+  'sudden.teleport.speech.1': 'Did you think directions were fixed?',
+  'sudden.teleport.speech.2': 'The maze wasn\'t built for you. It exists for itself.',
+  'sudden.teleport.speech.3': 'Find your way. Again.',
+  'sudden.teleport.log': '[ Displaced ] Teleported to a previously explored area',
+  'sudden.rewind.title': 'Time Rewind',
+  'sudden.rewind.text': 'A wave of vertigo. You find yourself five steps back. But time hasn\'t reversed.',
+  'sudden.rewind.speech.1': 'Let\'s start over. No, only you need to start over.',
+  'sudden.rewind.speech.2': 'Do you ever feel like all this is futile?',
+  'sudden.rewind.speech.3': '...Every step you\'ve taken, I remember.',
+  'sudden.rewind.log': '[ Rewind ] Returned to position from 5 steps ago',
 });
