@@ -54,7 +54,7 @@ OPENAI_API_KEY=sk-xxx API_BASE=https://api.xxx.com/v1 node server.js
 
 ```bash
 docker build -t clawtrap .
-docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-ant-xxx clawtrap
+docker run -p 127.0.0.1:3000:3000 -e ANTHROPIC_API_KEY=sk-ant-xxx clawtrap
 ```
 
 See [.env.example](.env.example) for all configuration options.
@@ -206,7 +206,7 @@ OPENAI_API_KEY=sk-xxx API_BASE=https://api.xxx.com/v1 node server.js
 
 ```bash
 docker build -t clawtrap .
-docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-ant-xxx clawtrap
+docker run -p 127.0.0.1:3000:3000 -e ANTHROPIC_API_KEY=sk-ant-xxx clawtrap
 ```
 
 完整配置项见 [.env.example](.env.example)。

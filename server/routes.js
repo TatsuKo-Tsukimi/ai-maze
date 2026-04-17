@@ -25,6 +25,25 @@ const playerProfile = require('./player-profile');
 const { getIntegrationHealth } = require('./integration-health');
 const { createLLMClient, readAuthProfiles, readGatewayConfig } = require('./provider');
 
+// CSRF mitigation for state-mutating config endpoints.
+// Blocks cross-origin browser requests (e.g. evil.com submitting a form to http://localhost:3000).
+// Rules:
+// - Origin present → must match Host (same-site).
+// - Origin absent → allow ONLY if connection is loopback. Modern browsers attach Origin
+//   for fetch/POST; its absence means either (a) a CLI tool on the same machine (safe on
+//   loopback) or (b) a non-standard client we shouldn't trust on a LAN-bound server.
+function isSameOriginPost(req) {
+  const origin = req.headers.origin;
+  if (origin) {
+    const host = req.headers.host;
+    if (!host) return false;
+    try { return new URL(origin).host === host; } catch { return false; }
+  }
+  const addr = req.socket && req.socket.remoteAddress;
+  if (!addr) return false;
+  return addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
+}
+
 const _usedMaterials = new Map(); // gameId → string[] (最近 3 条短摘要)
 const _endedGames = new Set();   // gameIds that have received game_end but may still have in-flight async
 const _lastTrialAnswer = new Map(); // gameId → { input, result } for exact-repeat short-circuit
@@ -963,6 +982,11 @@ function createRoutes(ctx) {
 
     // POST /api/config/lang — set server locale
     if (req.method === 'POST' && req.url === '/api/config/lang') {
+      if (!isSameOriginPost(req)) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: 'cross-origin request blocked' }));
+        return;
+      }
       let data = {};
       try { data = JSON.parse(await readBody(req)); } catch {}
       const lang = (data.lang || 'zh').trim();
@@ -1033,6 +1057,11 @@ function createRoutes(ctx) {
 
     // POST /api/config/provider
     if (req.method === 'POST' && req.url === '/api/config/provider') {
+      if (!isSameOriginPost(req)) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: 'cross-origin request blocked' }));
+        return;
+      }
       let data = {};
       try { data = JSON.parse(await readBody(req)); } catch {}
 
@@ -1072,6 +1101,11 @@ function createRoutes(ctx) {
 
     // POST /api/config/test
     if (req.method === 'POST' && req.url === '/api/config/test') {
+      if (!isSameOriginPost(req)) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: 'cross-origin request blocked' }));
+        return;
+      }
       let data = {};
       try { data = JSON.parse(await readBody(req)); } catch {}
 
@@ -1124,7 +1158,12 @@ function createRoutes(ctx) {
       // Allowlist: SOUL_PATH + GAME_ASSETS_PATH + all scan roots (includes WSL /mnt paths)
       const scanDirs = getScanRoots().map(r => path.resolve(r.path));
       const allowed = [ctx.SOUL_PATH, process.env.GAME_ASSETS_PATH, ...scanDirs].filter(Boolean);
-      if (!allowed.some(a => resolved.startsWith(path.resolve(a)))) { res.writeHead(403); res.end('Forbidden'); return; }
+      // Proper containment check: path.relative returns '..' or absolute when outside the parent
+      const isInside = (child, parent) => {
+        const rel = path.relative(path.resolve(parent), child);
+        return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
+      };
+      if (!allowed.some(a => isInside(resolved, a))) { res.writeHead(403); res.end('Forbidden'); return; }
       const SAFE_EXTS = new Set(['.png','.jpg','.jpeg','.gif','.webp','.bmp','.svg','.pdf','.txt','.md','.docx','.xlsx']);
       const ext = path.extname(imgPath).toLowerCase();
       if (!SAFE_EXTS.has(ext)) { res.writeHead(403); res.end('Forbidden'); return; }
@@ -1158,6 +1197,11 @@ function createRoutes(ctx) {
 
     // POST /api/scan/consent — user consents to local file scanning
     if (req.method === 'POST' && req.url === '/api/scan/consent') {
+      if (!isSameOriginPost(req)) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: 'cross-origin request blocked' }));
+        return;
+      }
       if (typeof ctx.startScanning === 'function') {
         ctx.startScanning();
       }
@@ -1168,6 +1212,11 @@ function createRoutes(ctx) {
 
     // POST /api/config/soul-path — configure the Agent workspace path at runtime
     if (req.method === 'POST' && req.url === '/api/config/soul-path') {
+      if (!isSameOriginPost(req)) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: 'cross-origin request blocked' }));
+        return;
+      }
       const os = require('os');
       const { initPlayerNames } = require('./memory');
       const { setIdentitySoulPath } = require('./prompts');
@@ -1244,6 +1293,11 @@ function createRoutes(ctx) {
 
     // POST /api/memory/config
     if (req.method === 'POST' && req.url === '/api/memory/config') {
+      if (!isSameOriginPost(req)) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: 'cross-origin request blocked' }));
+        return;
+      }
       let data = {};
       try { data = JSON.parse(await readBody(req)); } catch {}
       const level = data.level || 'none';
@@ -1534,7 +1588,17 @@ function createRoutes(ctx) {
     // Static files
     const urlPath  = req.url === '/' ? '/index.html' : req.url.split('?')[0];
     const filePath = path.resolve(ctx.GAME_DIR, '.' + urlPath);
-    if (!filePath.startsWith(ctx.GAME_DIR)) { res.writeHead(403); res.end(); return; }
+    const gameDirRel = path.relative(ctx.GAME_DIR, filePath);
+    if (gameDirRel !== '' && (gameDirRel.startsWith('..') || path.isAbsolute(gameDirRel))) {
+      res.writeHead(403); res.end(); return;
+    }
+    // Deny runtime state directories (fact-db, session logs, vcs, deps, test scripts)
+    // These are inside GAME_DIR (so the path traversal check above passes) but must
+    // never be served as static assets — they contain scanned player content.
+    const STATIC_DENY_PREFIXES = ['/data/', '/session-logs/', '/test-logs/', '/.git/', '/node_modules/', '/scripts/', '/tests/', '/design/'];
+    if (STATIC_DENY_PREFIXES.some(p => urlPath.startsWith(p))) {
+      res.writeHead(403); res.end(); return;
+    }
 
     fs.readFile(filePath, (err, data) => {
       if (err) { res.writeHead(404); res.end('Not found'); return; }

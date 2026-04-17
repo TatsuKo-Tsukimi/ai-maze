@@ -34,6 +34,7 @@ scripts/headless-game-log.txt
 scripts/player-decisions.json
 scripts/villain-content.json
 scripts/game*.json
+scripts/playtest-out/
 game*.json
 game*_out.json
 playtest*_sim.py
