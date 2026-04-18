@@ -1,6 +1,6 @@
 # ClawTrap — AI Maze Game
 
-**The 1st Agent-Native Game**
+**The 1st Agent-Native Game** · v1.5.1
 
 > Your AI assistant turned against you. It trapped you in a maze built from your own files and memories.
 
@@ -30,6 +30,10 @@ node server.js
 # Open http://localhost:3000
 ```
 
+On Windows, you can also double-click `start.bat`. On macOS/Linux, run `./start.sh`.
+
+For development with auto-reload: `npm run dev`
+
 ## LLM Setup
 
 ### 1) OpenClaw users (recommended — zero config)
@@ -44,7 +48,7 @@ ANTHROPIC_API_KEY=sk-ant-xxx node server.js
 
 ### 3) OpenAI or compatible API
 
-Works with OpenAI, DeepSeek, Zhipu, Kimi, or any OpenAI-compatible endpoint.
+Works with OpenAI, DeepSeek, Zhipu, Kimi, Ollama, or any OpenAI-compatible endpoint.
 
 ```bash
 OPENAI_API_KEY=sk-xxx API_BASE=https://api.xxx.com/v1 node server.js
@@ -67,10 +71,13 @@ The villain is a single persistent agent session with:
 
 - **File scanning** — reads files from your workspace (with your permission) and indexes them into a searchable fact database
 - **Tool use** — searches facts, reads file chunks, takes notes, plans strategy in real time
+- **ACT-R activation engine** — a Bayesian cognitive model (`A = B + S + ε`) that governs memory retrieval: recency/frequency decay, spreading activation from player context, and exploration noise — replacing hardcoded cooldowns with psychologically grounded memory dynamics
+- **Enhanced lure system** — Vision API analyzes your images; the villain generates narrative taunts from real file content; fullscreen overlay with typewriter effect immerses you in the temptation
 - **Theme clustering** — groups your files by topic for targeted attacks
 - **Background preparation** — pre-generates trials and cards while you're still moving
-- **Episodic memory** — remembers past games, what worked, what didn't, and adapts
+- **Cross-session memory** — remembers past games, truth discoveries, behavior patterns, and play style across sessions; veteran players face harder trials
 - **Quality feedback loop** — self-assesses trial quality; the system cross-validates against player behavior and feeds results back for calibration
+- **Idle awareness** — the villain reacts after prolonged inactivity; detects backtrack streaks and comments on your hesitation
 
 ### Card Types
 
@@ -87,11 +94,35 @@ The villain's strongest weapon. It pulls evidence from your files — a document
 
 After 2 failed attempts, a retreat button appears. Use it wisely — 3 retreats cost 1 HP.
 
+## Agent Integration
+
+ClawTrap supports three villain architectures. The villain can be the built-in agent, an external AI agent you control, or your own Claude Desktop / Claude Code instance:
+
+### 1) Built-in Agent (default)
+
+The game runs its own villain agent internally. No extra setup — just `node server.js`.
+
+### 2) External HTTP Agent
+
+Bring your own agent. Point the game at any HTTP service that implements the `/react` endpoint:
+
+```bash
+AGENT_URL=http://localhost:4000 node server.js
+```
+
+A reference implementation is included at `agent/default/server.js`. See [AGENT.md](AGENT.md) for the full agent protocol spec — it's model-agnostic and framework-agnostic.
+
+### 3) MCP (Claude Desktop / Claude Code)
+
+The included `mcp-server.js` exposes game tools via the MCP protocol, letting Claude Desktop or Claude Code act as the villain with full access to its own memory of you.
+
+See [docs/mcp-setup.md](docs/mcp-setup.md) for configuration.
+
 ## Tech Stack
 
 - **Backend:** Node.js (Express-less, raw HTTP)
 - **Frontend:** vanilla JavaScript, SVG, Canvas, Web Audio API
-- **LLM:** Anthropic Claude / OpenAI / any compatible provider
+- **LLM:** Anthropic Claude / OpenAI / Ollama / any compatible provider
 - **Dependencies:** `pdf-parse`, `ws`
 - **Frameworks:** none
 
@@ -99,20 +130,25 @@ After 2 failed attempts, a retreat button appears. Use it wisely — 3 retreats 
 
 ```
 server.js                  # entry point + boot sequence
+index.html                 # single-page game UI
+styles.css                 # game styles
+start.bat / start.sh       # convenience launchers
+
 server/
   provider.js              # multi-provider auto-detection + LLM client
   routes.js                # HTTP API routes
   maze-agent.js            # villain agent: session, event policies, tools, history compression
-  fact-db.js               # player file database + search
+  activation.js            # ACT-R Bayesian activation engine (memory retrieval scoring)
+  fact-db.js               # player file database + activation-sorted search
   file-scanner.js          # local filesystem scanning (with self-exclusion)
   scan-worker.js           # worker thread for filesystem scanning
   archivist.js             # background file analysis + fact extraction
   theme-cluster.js         # LLM-based file theme clustering
   ammo-queue.js            # background trial/card preparation
   player-profile.js        # structured player profile from facts
-  villain-memory.js        # cross-game episodic memory
-  session-memory.js        # cross-game player profile mid-term memory
-  vision-cache.js          # image analysis + lure cache
+  villain-memory.js        # cross-game episodic memory + consolidation
+  session-memory.js        # cross-game player profile + behavior tags
+  vision-cache.js          # image analysis + lure cache (Vision API)
   lure-allocator.js        # unified lure material allocation across games
   judge.js                 # trial quality filter + LLM judgment with caching
   trial-dedup.js           # trial state, fact/prompt dedup, topic rotation
@@ -123,7 +159,7 @@ server/
   memory.js                # personality/memory injection
   locales/                 # server-side i18n strings (en, zh)
   utils/                   # shared helpers (LLM gating, logging, PDF extraction)
-locales/                   # client-side i18n strings + loader
+
 js/
   core.js                  # game config, maze generation, deck engine
   mechanics.js             # gameplay loop + card/trial mechanics
@@ -136,6 +172,14 @@ js/
   audio.js                 # Web Audio synthesis (22+ sound effects)
   particles.js             # canvas particle effects
   mobile.js                # mobile gestures + haptics
+
+locales/                   # client-side i18n strings + loader
+agent/default/             # reference external agent implementation
+mcp-server.js              # MCP protocol adapter (Claude Desktop / Claude Code)
+design/                    # design documents (card system, agent integration)
+docs/                      # setup guides (MCP configuration)
+scripts/                   # simulation, playtesting, and smoke tests
+tests/                     # activation engine benchmarks
 ```
 
 ## Privacy
@@ -152,7 +196,7 @@ MIT
 
 # 永久囚禁 · AI迷宫游戏
 
-**首个 Agent-Native 游戏**
+**首个 Agent-Native 游戏** · v1.5.1
 
 > 你的AI助手反了。它用你自己的文件和记忆，把你困在了一座迷宫里。
 
@@ -182,6 +226,10 @@ node server.js
 # 打开 http://localhost:3000
 ```
 
+Windows 用户也可以双击 `start.bat`。macOS/Linux 用户运行 `./start.sh`。
+
+开发模式（自动重载）：`npm run dev`
+
 ## LLM 配置
 
 ### 1) OpenClaw 用户（推荐——零配置）
@@ -196,7 +244,7 @@ ANTHROPIC_API_KEY=sk-ant-xxx node server.js
 
 ### 3) OpenAI 或兼容 API
 
-支持 OpenAI、DeepSeek、智谱、Kimi，或任何 OpenAI 兼容接口。
+支持 OpenAI、DeepSeek、智谱、Kimi、Ollama，或任何 OpenAI 兼容接口。
 
 ```bash
 OPENAI_API_KEY=sk-xxx API_BASE=https://api.xxx.com/v1 node server.js
@@ -219,10 +267,13 @@ docker run -p 127.0.0.1:3000:3000 -e ANTHROPIC_API_KEY=sk-ant-xxx clawtrap
 
 - **文件扫描** ——读取你工作区的文件（经你许可），索引为可搜索的事实数据库
 - **工具使用** ——搜索事实、读取文件片段、做笔记、实时规划策略
+- **ACT-R 激活引擎** ——基于贝叶斯认知模型（`A = B + S + ε`）的记忆检索：时近度/频率衰减、从玩家上下文扩散的关联激活、探索噪声——用心理学原理取代硬编码冷却机制
+- **增强诱饵系统** —— Vision API 分析你的图片；反派从真实文件内容生成叙事嘲讽；全屏叠加层配合打字机效果，将你沉浸在诱惑之中
 - **主题聚类** ——按主题对你的文件分组，进行针对性攻击
 - **后台准备** ——在你移动时预生成审判和卡牌
-- **跨局记忆** ——记住过去的游戏、哪些策略有效、哪些无效，并自适应
+- **跨局记忆** ——跨会话记住过去的游戏、真相发现、行为模式和游玩风格；老玩家面对更难的审判
 - **质量反馈回路** ——自评审判质量；系统对照玩家行为交叉验证并反馈校准
+- **空闲感知** ——长时间不动时反派会开口；检测到连续后退会评论你的犹豫
 
 ### 卡牌类型
 
@@ -239,13 +290,93 @@ docker run -p 127.0.0.1:3000:3000 -e ANTHROPIC_API_KEY=sk-ant-xxx clawtrap
 
 失败2次后出现撤退按钮。明智地使用——每3次撤退扣1点HP。
 
+## Agent 接入
+
+ClawTrap 支持三种反派架构。反派可以是内置 agent、你控制的外部 AI agent、或你自己的 Claude Desktop / Claude Code 实例：
+
+### 1) 内置 Agent（默认）
+
+游戏内部运行自己的反派 agent。无需额外配置——直接 `node server.js`。
+
+### 2) 外部 HTTP Agent
+
+接入你自己的 agent。将游戏指向任何实现了 `/react` 端点的 HTTP 服务：
+
+```bash
+AGENT_URL=http://localhost:4000 node server.js
+```
+
+项目内附带参考实现 `agent/default/server.js`。完整 agent 协议规范见 [AGENT.md](AGENT.md)——与模型和框架无关。
+
+### 3) MCP（Claude Desktop / Claude Code）
+
+内附的 `mcp-server.js` 通过 MCP 协议暴露游戏工具，让 Claude Desktop 或 Claude Code 充当反派，带着它对你的全部记忆参战。
+
+配置方法见 [docs/mcp-setup.md](docs/mcp-setup.md)。
+
 ## 技术栈
 
 - **后端：** Node.js（无Express，原生HTTP）
 - **前端：** 原生JavaScript、SVG、Canvas、Web Audio API
-- **LLM：** Anthropic Claude / OpenAI / 任意兼容provider
+- **LLM：** Anthropic Claude / OpenAI / Ollama / 任意兼容 provider
 - **依赖：** `pdf-parse`、`ws`
 - **框架：** 无
+
+## 项目结构
+
+```
+server.js                  # 入口 + 启动序列
+index.html                 # 单页游戏 UI
+styles.css                 # 游戏样式
+start.bat / start.sh       # 便捷启动脚本
+
+server/
+  provider.js              # 多 provider 自动检测 + LLM 客户端
+  routes.js                # HTTP API 路由
+  maze-agent.js            # 反派 agent：session、事件策略、工具、历史压缩
+  activation.js            # ACT-R 贝叶斯激活引擎（记忆检索评分）
+  fact-db.js               # 玩家文件数据库 + 激活排序检索
+  file-scanner.js          # 本地文件系统扫描（含自排除）
+  scan-worker.js           # 文件扫描 worker 线程
+  archivist.js             # 后台文件分析 + 事实提取
+  theme-cluster.js         # LLM 主题聚类
+  ammo-queue.js            # 后台审判/卡牌预加载
+  player-profile.js        # 结构化玩家画像
+  villain-memory.js        # 跨局情景记忆 + 记忆巩固
+  session-memory.js        # 跨局玩家画像 + 行为标签
+  vision-cache.js          # 图片分析 + 诱饵缓存（Vision API）
+  lure-allocator.js        # 跨局诱饵素材统一分配
+  judge.js                 # 审判质量过滤 + LLM 判定（带缓存）
+  trial-dedup.js           # 审判状态、事实/prompt 去重、话题轮转
+  topic-state.js           # 单局审判话题记忆 + 重复代价信号
+  llm-helpers.js           # LLM 调用、JSON 提取、外部 agent 集成
+  integration-health.js    # 集成健康检查 + 数据校验
+  prompts.js               # system prompt 生成
+  memory.js                # 人格/记忆注入
+  locales/                 # 服务端 i18n（en、zh）
+  utils/                   # 共享工具（LLM 限流、日志、PDF 提取）
+
+js/
+  core.js                  # 游戏配置、迷宫生成、牌组引擎
+  mechanics.js             # 游戏循环 + 卡牌/审判机制
+  input.js                 # 启动序列 + 键盘输入
+  render.js                # 走廊 SVG + 小地图 + 出口系统
+  lure-viewer.js           # 全屏诱饵叠加层 + 文本查看器
+  trials.js                # 审判 UI + God Hand + 撤退
+  endgame.js               # 终局画面 + 尾声
+  overlays.js              # 事件叠加层 UI
+  audio.js                 # Web Audio 合成（22+ 音效）
+  particles.js             # Canvas 粒子特效
+  mobile.js                # 移动端手势 + 触觉反馈
+
+locales/                   # 客户端 i18n + 加载器
+agent/default/             # 外部 agent 参考实现
+mcp-server.js              # MCP 协议适配器（Claude Desktop / Claude Code）
+design/                    # 设计文档（卡牌系统、agent 集成）
+docs/                      # 配置指南（MCP 配置）
+scripts/                   # 仿真、play test、冒烟测试
+tests/                     # 激活引擎基准测试
+```
 
 ## 隐私
 
