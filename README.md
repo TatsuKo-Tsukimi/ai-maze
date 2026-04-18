@@ -48,7 +48,7 @@ ANTHROPIC_API_KEY=sk-ant-xxx node server.js
 
 ### 3) OpenAI or compatible API
 
-Works with OpenAI, DeepSeek, Zhipu, Kimi, Ollama, or any OpenAI-compatible endpoint.
+Works with OpenAI, DeepSeek, Zhipu, Kimi, or any OpenAI-compatible endpoint (including Ollama in OpenAI-compatible mode).
 
 ```bash
 OPENAI_API_KEY=sk-xxx API_BASE=https://api.xxx.com/v1 node server.js
@@ -76,7 +76,6 @@ The villain is a single persistent agent session with:
 - **Theme clustering** — groups your files by topic for targeted attacks
 - **Background preparation** — pre-generates trials and cards while you're still moving
 - **Cross-session memory** — remembers past games, truth discoveries, behavior patterns, and play style across sessions; veteran players face harder trials
-- **Quality feedback loop** — self-assesses trial quality; the system cross-validates against player behavior and feeds results back for calibration
 - **Idle awareness** — the villain reacts after prolonged inactivity; detects backtrack streaks and comments on your hesitation
 
 ### Card Types
@@ -112,9 +111,9 @@ AGENT_URL=http://localhost:4000 node server.js
 
 A reference implementation is included at `agent/default/server.js`. See [AGENT.md](AGENT.md) for the full agent protocol spec — it's model-agnostic and framework-agnostic.
 
-### 3) MCP (Claude Desktop / Claude Code)
+### 3) MCP (Claude Desktop / Claude Code) — experimental
 
-The included `mcp-server.js` exposes game tools via the MCP protocol, letting Claude Desktop or Claude Code act as the villain with full access to its own memory of you.
+The included `mcp-server.js` exposes game tools via the MCP protocol, letting Claude Desktop or Claude Code act as the villain with full access to its own memory of you. This integration is experimental and may require additional setup.
 
 See [docs/mcp-setup.md](docs/mcp-setup.md) for configuration.
 
@@ -122,7 +121,7 @@ See [docs/mcp-setup.md](docs/mcp-setup.md) for configuration.
 
 - **Backend:** Node.js (Express-less, raw HTTP)
 - **Frontend:** vanilla JavaScript, SVG, Canvas, Web Audio API
-- **LLM:** Anthropic Claude / OpenAI / Ollama / any compatible provider
+- **LLM:** Anthropic Claude / OpenAI / any OpenAI-compatible provider
 - **Dependencies:** `pdf-parse`, `ws`
 - **Frameworks:** none
 
@@ -244,7 +243,7 @@ ANTHROPIC_API_KEY=sk-ant-xxx node server.js
 
 ### 3) OpenAI 或兼容 API
 
-支持 OpenAI、DeepSeek、智谱、Kimi、Ollama，或任何 OpenAI 兼容接口。
+支持 OpenAI、DeepSeek、智谱、Kimi，或任何 OpenAI 兼容接口（包括 Ollama 的 OpenAI 兼容模式）。
 
 ```bash
 OPENAI_API_KEY=sk-xxx API_BASE=https://api.xxx.com/v1 node server.js
@@ -272,7 +271,6 @@ docker run -p 127.0.0.1:3000:3000 -e ANTHROPIC_API_KEY=sk-ant-xxx clawtrap
 - **主题聚类** ——按主题对你的文件分组，进行针对性攻击
 - **后台准备** ——在你移动时预生成审判和卡牌
 - **跨局记忆** ——跨会话记住过去的游戏、真相发现、行为模式和游玩风格；老玩家面对更难的审判
-- **质量反馈回路** ——自评审判质量；系统对照玩家行为交叉验证并反馈校准
 - **空闲感知** ——长时间不动时反派会开口；检测到连续后退会评论你的犹豫
 
 ### 卡牌类型
@@ -308,9 +306,9 @@ AGENT_URL=http://localhost:4000 node server.js
 
 项目内附带参考实现 `agent/default/server.js`。完整 agent 协议规范见 [AGENT.md](AGENT.md)——与模型和框架无关。
 
-### 3) MCP（Claude Desktop / Claude Code）
+### 3) MCP（Claude Desktop / Claude Code）—— 实验性
 
-内附的 `mcp-server.js` 通过 MCP 协议暴露游戏工具，让 Claude Desktop 或 Claude Code 充当反派，带着它对你的全部记忆参战。
+内附的 `mcp-server.js` 通过 MCP 协议暴露游戏工具，让 Claude Desktop 或 Claude Code 充当反派，带着它对你的全部记忆参战。此集成方式为实验性质，可能需要额外配置。
 
 配置方法见 [docs/mcp-setup.md](docs/mcp-setup.md)。
 
@@ -318,7 +316,7 @@ AGENT_URL=http://localhost:4000 node server.js
 
 - **后端：** Node.js（无Express，原生HTTP）
 - **前端：** 原生JavaScript、SVG、Canvas、Web Audio API
-- **LLM：** Anthropic Claude / OpenAI / Ollama / 任意兼容 provider
+- **LLM：** Anthropic Claude / OpenAI / 任意 OpenAI 兼容 provider
 - **依赖：** `pdf-parse`、`ws`
 - **框架：** 无
 
